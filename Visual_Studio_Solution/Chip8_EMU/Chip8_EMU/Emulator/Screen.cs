@@ -132,7 +132,7 @@ namespace Chip8_EMU.Emulator
 
             if (framecounter % 60 == 0)
             {
-                TimeNow = Clock.GetTimeNow();
+                TimeNow = Clock.GetRealTimeNow();
                 fps = (60 * (long)SystemConfig.ONE_BILLION) / ((TimeNow - LastTime) + 1);
                 LastTime = TimeNow;
             }

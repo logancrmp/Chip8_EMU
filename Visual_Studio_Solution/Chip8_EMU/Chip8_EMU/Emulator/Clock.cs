@@ -33,7 +33,9 @@ namespace Chip8_EMU.Emulator
 
         internal static byte GetRandByte()
         {
-            return (byte)random.Next(0, 256);
+            byte[] RandByte = new byte[1];
+            random.NextBytes(RandByte);
+            return RandByte[0];
         }
 
 
@@ -113,6 +115,11 @@ namespace Chip8_EMU.Emulator
 
                 foreach (var timer in Timers.Values)
                 {
+                    if (timer != Timers[Screen.ScreenTimerHandle])
+                    {
+                        continue;
+                    }
+
                     TimerExecCntr = 0;
 
                     // timer will execute as many deadlines as possible until either the timer has caught

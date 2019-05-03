@@ -1,10 +1,33 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace Chip8_EMU.Emulator
 {
+    internal class DrawTest : System.Windows.Controls.Image
+    {
+        DrawingGroup drawGroup = new DrawingGroup();
+        System.Windows.Rect rectStruct = new System.Windows.Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
+
+        protected override void OnRender(DrawingContext drawingContext)
+        {
+            base.OnRender(drawingContext);
+
+            Render(); // put content into our backingStore
+            drawingContext.DrawDrawing(drawGroup);
+        }
+
+        internal void Render()
+        {
+            var drawingContext = drawGroup.Open();
+            drawingContext.DrawImage(Screen.bitmap, rectStruct);
+            drawingContext.Close();
+        }
+    }
+
     static class Screen
     {
         private static MainWindow ParentWindow;
@@ -16,7 +39,7 @@ namespace Chip8_EMU.Emulator
         internal static int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
         internal static byte[][] EMU_FRAME;
         internal static object __EmuFrame_Lock = new object();
-        static WriteableBitmap bitmap;
+        internal static WriteableBitmap bitmap;
 
         internal static int ScreenTimerHandle = 0xFF;
 
@@ -24,13 +47,16 @@ namespace Chip8_EMU.Emulator
         private static bool PipelineActive = false;
         private static object __PipelineActive_Lock = new object();
 
+        private static DrawTest drawTest = new DrawTest();
 
         static internal void InitScreen(MainWindow ParentWindow)
         {
             Screen.ParentWindow = ParentWindow;
 
-            bitmap = ParentWindow.VideoFrame.Source as WriteableBitmap;
+            //bitmap = ParentWindow.VideoFrame.Source as WriteableBitmap;
             bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, pixelFormat, null);
+
+            //Screen.ParentWindow.VideoFrame = drawTest;
             Screen.ParentWindow.VideoFrame.BeginInit();
             Screen.ParentWindow.VideoFrame.Source = bitmap;
             Screen.ParentWindow.VideoFrame.EndInit();
@@ -46,7 +72,8 @@ namespace Chip8_EMU.Emulator
             PipelineWorker.DoWork += GraphicsPipeline;
             PipelineWorker.RunWorkerCompleted += PipelineComplete;
 
-            ScreenTimerHandle = Clock.AddTimer(TimerTypeEnum.TimerRepeating, SystemConfig.FRAME_RATE, TriggerGraphicsPipeline, true);
+            //ScreenTimerHandle = Clock.AddTimer(TimerTypeEnum.TimerRepeating, SystemConfig.FRAME_RATE, TriggerGraphicsPipeline, true);
+            ScreenTimerHandle = Clock.AddTimer(TimerTypeEnum.TimerRepeating, SystemConfig.FRAME_RATE, TriggerGraphicsPipeline, false);
         }
 
 
@@ -98,6 +125,10 @@ namespace Chip8_EMU.Emulator
 
         static int ImgDivWidth = SystemConfig.DRAW_FRAME_WIDTH / SystemConfig.EMU_SCREEN_WIDTH;
         static int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
+        static int a = 0;
+        static int b = SystemConfig.EMU_SCREEN_HEIGHT - 1;
+        static int c = 0;
+        static bool up = false;
         static internal void CopyToFrameBuffer()
         {
             lock (__EmuFrame_Lock)
@@ -143,7 +174,8 @@ namespace Chip8_EMU.Emulator
                 {
                     bitmap.WritePixels(rect, FrameBuffer, Stride, 0);
                     ParentWindow.SetLogText("fps: " + fps.ToString("N2") + "\nIPS: " + string.Format("{0:n0}", CPU.IPS));
-                    ParentWindow.VideoFrame.InvalidateVisual();
+                    //ParentWindow.VideoFrame.InvalidateVisual();
+                    drawTest.Render();
                 });
             }
             catch { }

@@ -440,7 +440,6 @@ namespace Chip8_EMU.Emulator
             {
                 // block until 60Hz refresh
                 RefreshDeadline = Clock.GetTimerDeadline(CPU.SyncTimerHandler);
-                //RefreshDeadline = Clock.GetTimerDeadline(Screen.ScreenTimerHandle);
                 DrawSpriteInstructionState = 1;
                 TimeCounter = 0;
                 CPU.Registers.J_JumpFlag = 1;

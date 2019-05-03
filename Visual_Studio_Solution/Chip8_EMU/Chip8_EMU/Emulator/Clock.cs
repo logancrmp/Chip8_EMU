@@ -31,7 +31,7 @@ namespace Chip8_EMU.Emulator
         private static ulong ClockTime = 0;
 
 
-        public static byte GetRandByte()
+        internal static byte GetRandByte()
         {
             return (byte)random.Next(0, 256);
         }
@@ -137,6 +137,8 @@ namespace Chip8_EMU.Emulator
                                 // increment from previous deadline
                                 timer.NextDeadline += timer.TimeoutValue;
                             }
+
+                            // clear deadline handled flag
                             timer.DeadlineHandled = false;
                         }
                         else

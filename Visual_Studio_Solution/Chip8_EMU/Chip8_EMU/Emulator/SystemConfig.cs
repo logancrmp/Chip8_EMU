@@ -15,9 +15,9 @@ namespace Chip8_EMU.Emulator
         // CONFIGURATION
         internal static char[] InputKeyMap = new char[] { 'S', 'B', 'C', 'T', 'A', 'S', 'D', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P' };
 
-        internal const int FRAME_RATE = 80;
+        internal const int FRAME_RATE = 60;
 
-        internal const int CPU_FREQ = 20000000;
+        internal const int CPU_FREQ = 8000000;
 
         internal const int DRAW_FRAME_WIDTH = 1280;
         internal const int DRAW_FRAME_HEIGHT = 640;

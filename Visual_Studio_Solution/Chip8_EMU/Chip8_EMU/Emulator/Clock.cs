@@ -158,7 +158,7 @@ namespace Chip8_EMU.Emulator
 
                 // sleep for a few ms. Gives graphics thread time to
                 // run, and cpu will catch up on next timer exec
-                System.Threading.Thread.Sleep(1);
+                System.Threading.Thread.Sleep(0);
             }
         }
 

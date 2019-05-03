@@ -115,65 +115,72 @@ namespace Chip8_EMU.Emulator
         static int c = 0;
         static bool up = false;
         static bool left = false;
+        static int framecountthing = 0;
         static internal void CopyToFrameBuffer()
         {
             lock (__EmuFrame_Lock)
             {
-                int rate = (120 / SystemConfig.FRAME_RATE);
-                EMU_FRAME[by][bx] = 0x00;
-                EMU_FRAME[by][(bx + 1 < SystemConfig.EMU_SCREEN_WIDTH ? bx + 1 : bx)] = 0x00;
-                EMU_FRAME[(by + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? by + 1 : by)][bx] = 0x00;
-                EMU_FRAME[(by + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? by + 1 : by)][(bx + 1 < SystemConfig.EMU_SCREEN_WIDTH ? bx + 1 : bx)] = 0x00;
-                EMU_FRAME[ay][ax] = 0xFF;
-                EMU_FRAME[ay][(ax + 1 < SystemConfig.EMU_SCREEN_WIDTH ? ax + 1 : ax)] = 0xFF;
-                EMU_FRAME[(ay + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? ay + 1 : ay)][ax] = 0xFF;
-                EMU_FRAME[(ay + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? ay + 1 : ay)][(ax + 1 < SystemConfig.EMU_SCREEN_WIDTH ? ax + 1 : ax)] = 0xFF;
-
-                if (up)
+                if (framecountthing++ == 2)
                 {
-                    by = ay;
-                    ay -= rate;
+                    framecountthing = 0;
 
-                    if (ay <= 0)
+                    int rate = Math.Max((240 / SystemConfig.FRAME_RATE), 1);
+                    EMU_FRAME[by][bx] = 0x00;
+                    EMU_FRAME[by][(bx + 1 < SystemConfig.EMU_SCREEN_WIDTH ? bx + 1 : bx)] = 0x00;
+                    EMU_FRAME[(by + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? by + 1 : by)][bx] = 0x00;
+                    EMU_FRAME[(by + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? by + 1 : by)][(bx + 1 < SystemConfig.EMU_SCREEN_WIDTH ? bx + 1 : bx)] = 0x00;
+                    EMU_FRAME[ay][ax] = 0xFF;
+                    EMU_FRAME[ay][(ax + 1 < SystemConfig.EMU_SCREEN_WIDTH ? ax + 1 : ax)] = 0xFF;
+                    EMU_FRAME[(ay + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? ay + 1 : ay)][ax] = 0xFF;
+                    EMU_FRAME[(ay + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? ay + 1 : ay)][(ax + 1 < SystemConfig.EMU_SCREEN_WIDTH ? ax + 1 : ax)] = 0xFF;
+
+                    if (up)
                     {
-                        ay = 0;
-                        up = false;
+                        by = ay;
+                        ay -= rate;
+
+                        if (ay <= 0)
+                        {
+                            ay = 0;
+                            up = false;
+                        }
+                    }
+                    else
+                    {
+                        by = ay;
+                        ay += rate;
+
+                        if (ay >= SystemConfig.EMU_SCREEN_HEIGHT)
+                        {
+                            ay = SystemConfig.EMU_SCREEN_HEIGHT - 1;
+                            up = true;
+                        }
+                    }
+
+                    if (left)
+                    {
+                        bx = ax;
+                        ax -= (rate + 3);
+
+                        if (ax <= 0)
+                        {
+                            ax = 0;
+                            left = false;
+                        }
+                    }
+                    else
+                    {
+                        bx = ax;
+                        ax += (rate + 3);
+
+                        if (ax >= SystemConfig.EMU_SCREEN_WIDTH)
+                        {
+                            ax = SystemConfig.EMU_SCREEN_WIDTH - 1;
+                            left = true;
+                        }
                     }
                 }
-                else
-                {
-                    by = ay;
-                    ay += rate;
-
-                    if (ay >= SystemConfig.EMU_SCREEN_HEIGHT)
-                    {
-                        ay = SystemConfig.EMU_SCREEN_HEIGHT - 1;
-                        up = true;
-                    }
-                }
-
-                if (left)
-                {
-                    bx = ax;
-                    ax -= (rate + 3);
-
-                    if (ax <= 0)
-                    {
-                        ax = 0;
-                        left = false;
-                    }
-                }
-                else
-                {
-                    bx = ax;
-                    ax += (rate + 3);
-
-                    if (ax >= SystemConfig.EMU_SCREEN_WIDTH)
-                    {
-                        ax = SystemConfig.EMU_SCREEN_WIDTH - 1;
-                        left = true;
-                    }
-                }
+                
 
 
                 // parallel threads for a memcpy? seems to help but might not be the cause

@@ -9,8 +9,7 @@ namespace Chip8_EMU.Emulator
 {
     internal class VideoFrame : FrameworkElement
     {
-        //DrawingGroup drawGroup = new DrawingGroup();
-        System.Windows.Rect rectStruct = new System.Windows.Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
+        Rect rectStruct = new Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
 
         protected override void OnRender(DrawingContext drawingContext)
         {
@@ -139,7 +138,7 @@ namespace Chip8_EMU.Emulator
         static double TimeNow = 0;
         static double LastTime = 0;
         static long framecounter = 0;
-        static System.Windows.Int32Rect rect = new System.Windows.Int32Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
+        static Int32Rect rect = new Int32Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
         static internal void SyncDrawFrameToScreen()
         {
             framecounter += 1;

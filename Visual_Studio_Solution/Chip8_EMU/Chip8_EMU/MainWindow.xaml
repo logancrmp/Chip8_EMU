@@ -9,8 +9,6 @@
     <Grid>
         <TextBox Name="outlog" HorizontalAlignment="Left" Height="69" Margin="10,690,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="616"/>
         <Button Content="Button" HorizontalAlignment="Left" Margin="1231,690,0,0" VerticalAlignment="Top" Width="151" Click="Button_Click" Height="69"/>
-        <!--<Image Name="VideoFrame" SnapsToDevicePixels="True" HorizontalAlignment="Left" Height="640" Margin="10,10,0,0" VerticalAlignment="Top" Width="1280">
-        </Image>-->
         <Canvas>
             <local:VideoFrame Canvas.Top="10" Canvas.Left="10" x:Name="customRender" Height="651" Width="1372"/>
         </Canvas>

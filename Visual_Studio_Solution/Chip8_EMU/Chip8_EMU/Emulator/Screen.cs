@@ -112,7 +112,6 @@ namespace Chip8_EMU.Emulator
         static int ay = 0;
         static int bx = 0;
         static int by = 0;
-        static int c = 0;
         static bool up = false;
         static bool left = false;
         static int framecountthing = 0;

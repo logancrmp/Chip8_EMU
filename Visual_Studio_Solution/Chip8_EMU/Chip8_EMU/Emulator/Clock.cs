@@ -115,11 +115,6 @@ namespace Chip8_EMU.Emulator
 
                 foreach (var timer in Timers.Values)
                 {
-                    if (timer != Timers[Screen.ScreenTimerHandle])
-                    {
-                        continue;
-                    }
-
                     TimerExecCntr = 0;
 
                     // timer will execute as many deadlines as possible until either the timer has caught

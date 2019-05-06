@@ -104,10 +104,6 @@ namespace Chip8_EMU.Emulator
 
         static int ImgDivWidth = SystemConfig.DRAW_FRAME_WIDTH / SystemConfig.EMU_SCREEN_WIDTH;
         static int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
-        static int a = 0;
-        static int b = SystemConfig.EMU_SCREEN_HEIGHT - 1;
-        static int c = 0;
-        static bool up = false;
         static internal void CopyToFrameBuffer()
         {
             lock (__EmuFrame_Lock)

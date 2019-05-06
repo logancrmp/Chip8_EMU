@@ -41,9 +41,6 @@ namespace Chip8_EMU.Emulator
         {
             Screen.ParentWindow = ParentWindow;
 
-            //bitmap = ParentWindow.VideoFrame.Source as WriteableBitmap;
-            //bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, pixelFormat, null);
-
             FrameBuffer = new byte[SystemConfig.DRAW_FRAME_HEIGHT * Stride];
             EMU_FRAME = new byte[SystemConfig.EMU_SCREEN_HEIGHT][];
 

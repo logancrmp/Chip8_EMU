@@ -42,9 +42,6 @@ namespace Chip8_EMU.Emulator
         {
             Screen.ParentWindow = ParentWindow;
 
-            //bitmap = ParentWindow.VideoFrame.Source as WriteableBitmap;
-            //bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, pixelFormat, null);
-
             FrameBuffer = new byte[SystemConfig.DRAW_FRAME_HEIGHT * Stride];
             EMU_FRAME = new byte[SystemConfig.EMU_SCREEN_HEIGHT][];
 
@@ -119,11 +116,11 @@ namespace Chip8_EMU.Emulator
         {
             lock (__EmuFrame_Lock)
             {
-                if (framecountthing++ == 2)
+                if (framecountthing++ == 1)
                 {
                     framecountthing = 0;
 
-                    int rate = Math.Max((240 / SystemConfig.FRAME_RATE), 1);
+                    int rate = Math.Max((120 / SystemConfig.FRAME_RATE), 1);
                     EMU_FRAME[by][bx] = 0x00;
                     EMU_FRAME[by][(bx + 1 < SystemConfig.EMU_SCREEN_WIDTH ? bx + 1 : bx)] = 0x00;
                     EMU_FRAME[(by + 1 < SystemConfig.EMU_SCREEN_HEIGHT ? by + 1 : by)][bx] = 0x00;
@@ -159,7 +156,7 @@ namespace Chip8_EMU.Emulator
                     if (left)
                     {
                         bx = ax;
-                        ax -= (rate + 3);
+                        ax -= (rate*7/2);
 
                         if (ax <= 0)
                         {
@@ -170,7 +167,7 @@ namespace Chip8_EMU.Emulator
                     else
                     {
                         bx = ax;
-                        ax += (rate + 3);
+                        ax += (rate*7/2);
 
                         if (ax >= SystemConfig.EMU_SCREEN_WIDTH)
                         {

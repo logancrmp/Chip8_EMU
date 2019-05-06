@@ -145,7 +145,8 @@ namespace Chip8_EMU.Emulator
 
             try
             {
-                ParentWindow.Dispatcher.Invoke(() =>
+                // copy the framebuffer to the output, and draw it to the screen
+                ParentWindow.customRender.Dispatcher.Invoke(() =>
                 {
                     bitmap.WritePixels(rect, FrameBuffer, Stride, 0);
 
@@ -153,7 +154,7 @@ namespace Chip8_EMU.Emulator
                     {
                         ParentWindow.SetLogText("fps: " + fps.ToString("N2") + "\nIPS: " + string.Format("{0:n0}", CPU.IPS));
                     }
-                });
+                }, System.Windows.Threading.DispatcherPriority.Render);
             }
             catch { }
         }

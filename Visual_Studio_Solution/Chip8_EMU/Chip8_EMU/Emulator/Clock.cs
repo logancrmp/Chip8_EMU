@@ -202,10 +202,10 @@ namespace Chip8_EMU.Emulator
 
                 // sleep for a few ms. Gives graphics thread time to
                 // run, and cpu will catch up on next timer exec
-                    if (SystemConfig.PERFORMANCE_LEVEL > 0)
-                    {
-                        System.Threading.Thread.Sleep(SystemConfig.PERFORMANCE_LEVEL - 1);
-                    }
+                if (SystemConfig.PERFORMANCE_LEVEL > 0)
+                {
+                    System.Threading.Thread.Sleep(SystemConfig.PERFORMANCE_LEVEL - 1);
+                }
             }
         }
 

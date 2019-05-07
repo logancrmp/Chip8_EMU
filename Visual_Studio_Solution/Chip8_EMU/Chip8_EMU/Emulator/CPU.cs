@@ -40,11 +40,11 @@ namespace Chip8_EMU.Emulator
 
             // Setup timer for core clock
             CoreTimerHandle = Clock.AddTimer(ExecCycle);
-            Clock.SetTimerCyclic(CoreTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.CPU_FREQ), false);
+            Clock.StartTimerCyclic(CoreTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.CPU_FREQ), false);
 
             // Setup timer for 60 Hz instruction sync
             SyncTimerHandler = Clock.AddTimer(null);
-            Clock.SetTimerCyclic(SyncTimerHandler, (SystemConfig.ONE_BILLION / 60), true);
+            Clock.StartTimerCyclic(SyncTimerHandler, (SystemConfig.ONE_BILLION / 60), true);
         }
 
 

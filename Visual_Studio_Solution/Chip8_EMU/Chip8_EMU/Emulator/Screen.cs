@@ -53,7 +53,7 @@ namespace Chip8_EMU.Emulator
             PipelineWorker.RunWorkerCompleted += PipelineComplete;
 
             ScreenTimerHandle = Clock.AddTimer(TriggerGraphicsPipeline);
-            Clock.SetTimerCyclic(ScreenTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.FRAME_RATE), true);
+            Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.FRAME_RATE), true);
         }
 
 

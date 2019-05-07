@@ -10,8 +10,8 @@ namespace Chip8_EMU.Emulator
     enum TimerTypeEnum
     {
         TimerInvalid,
-        TimerOneShot,    // Count down to 0, trigger callback, halt
-        TimerRepeating,  // Count down to 0, trigger callback, set timer for next period
+        TimerOneShot,   // Count down to 0, trigger callback, halt
+        TimerCyclic,    // Count down to 0, trigger callback, set timer for next period
     };
 
 
@@ -38,14 +38,7 @@ namespace Chip8_EMU.Emulator
             return RandByte[0];
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="TimerType"></param>
-        /// <param name="FrequencyHZ"></param>
-        /// <param name="TimerNotification"></param>
-        /// <param name="SkipMissedDeadlines">So the idea of it is if the timer has this flag set to false, </param>
-        /// <returns></returns>
+
         internal static int AddTimer(TimerFncPtrType TimerNotification)
         {
             Timer NewTimer = new Timer();
@@ -59,7 +52,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void SetTimerOneShot(int TimerHandle, ulong TimeoutNanoSeconds)
+        internal static void StartTimerOneShot(int TimerHandle, ulong TimeoutNanoSeconds)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
@@ -74,11 +67,11 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void SetTimerCyclic(int TimerHandle, ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
+        internal static void StartTimerCyclic(int TimerHandle, ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
-                Timers[TimerHandle].TimerType = TimerTypeEnum.TimerRepeating;
+                Timers[TimerHandle].TimerType = TimerTypeEnum.TimerCyclic;
                 Timers[TimerHandle].SkipMissedDeadlines = SkipMissedDeadlines;
                 Timers[TimerHandle].TimeoutValue = TimeoutNanoSeconds;
                 Timers[TimerHandle].TimerActive = true;
@@ -132,9 +125,13 @@ namespace Chip8_EMU.Emulator
 
         internal static void RunClock()
         {
+            int TimerExecCntr = 0;
+
+            ClockSource.Start();
+
             foreach (var timer in Timers.Values)
             {
-                if (timer.TimerType == TimerTypeEnum.TimerRepeating)
+                if (timer.TimerType == TimerTypeEnum.TimerCyclic)
                 {
                     timer.NextDeadline = GetRealTimeNow() + timer.TimeoutValue;
                     timer.DeadlineHandled = false;
@@ -145,10 +142,7 @@ namespace Chip8_EMU.Emulator
                     timer.DeadlineHandled = false;
                 }
             }
-
-            ClockSource.Start();
-            int TimerExecCntr = 0;
-
+            
             while (true)
             {
                 // set ClockTime to the number of nanoseconds since time 0
@@ -173,7 +167,7 @@ namespace Chip8_EMU.Emulator
                         timer.TimerNotification?.Invoke();
 
                         // if the timer is a repeating timer, reset it for its next deadline
-                        if (timer.TimerType == TimerTypeEnum.TimerRepeating)
+                        if (timer.TimerType == TimerTypeEnum.TimerCyclic)
                         {
                             if (timer.SkipMissedDeadlines)
                             {

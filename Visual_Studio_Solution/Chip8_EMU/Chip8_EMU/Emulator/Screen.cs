@@ -26,7 +26,7 @@ namespace Chip8_EMU.Emulator
 
         internal static byte[] FrameBuffer;
         internal static int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
-        internal static byte[][] EMU_FRAME;
+        internal static byte[][] EMU_FRAME; // array of arrays was roughly 7-8 percentage points lower cpu usage that 2d array
         internal static object __EmuFrame_Lock = new object();
         internal static WriteableBitmap bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, pixelFormat, null);
 
@@ -52,7 +52,8 @@ namespace Chip8_EMU.Emulator
             PipelineWorker.DoWork += GraphicsPipeline;
             PipelineWorker.RunWorkerCompleted += PipelineComplete;
 
-            ScreenTimerHandle = Clock.AddTimer(TimerTypeEnum.TimerRepeating, SystemConfig.FRAME_RATE, TriggerGraphicsPipeline, false);
+            ScreenTimerHandle = Clock.AddTimer(TriggerGraphicsPipeline);
+            Clock.SetTimerCyclic(ScreenTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.FRAME_RATE), true);
         }
 
 
@@ -79,7 +80,10 @@ namespace Chip8_EMU.Emulator
 
                 if (PipelineActiveLocal == true)
                 {
-                    System.Threading.Thread.Sleep(1);
+                    if (SystemConfig.PERFORMANCE_LEVEL > 0)
+                    {
+                        System.Threading.Thread.Sleep(SystemConfig.PERFORMANCE_LEVEL - 1);
+                    }
                 }
             }
         }
@@ -152,7 +156,25 @@ namespace Chip8_EMU.Emulator
 
                     if (framecounter % 60 == 0)
                     {
-                        ParentWindow.SetLogText("fps: " + fps.ToString("N2") + "\nIPS: " + string.Format("{0:n0}", CPU.IPS));
+                        double CpuHz = CPU.IPS;
+                        var CpuStr = "";
+                        if (CpuHz >= 1000000)
+                        {
+                            CpuHz /= 1000000.0d;
+                            CpuStr = "MHz";
+                        }
+                        else
+                        if (CpuHz >= 1000)
+                        {
+                            CpuHz /= 1000.0d;
+                            CpuStr = "KHz";
+                        }
+                        else
+                        {
+                            CpuHz = Math.Floor(CpuHz);
+                        }
+
+                        ParentWindow.SetLogText("FPS : " + fps.ToString("N2") + "\nFREQ: " + CpuHz.ToString("N2") + " " + CpuStr);
                     }
                 }, System.Windows.Threading.DispatcherPriority.Render);
             }

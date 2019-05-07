@@ -212,7 +212,7 @@ namespace Chip8_EMU.Emulator
 
         internal static ulong GetRealTimeNow()
         {
-            return (ulong)(( ClockSource.ElapsedTicks * SystemConfig.ONE_BILLION ) / Stopwatch.Frequency);
+            return (ulong)(( ClockSource.ElapsedTicks * SystemConst.ONE_BILLION ) / Stopwatch.Frequency);
         }
 
 

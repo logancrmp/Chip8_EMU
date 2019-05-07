@@ -32,7 +32,7 @@ namespace Chip8_EMU.Emulator
 
             // If at least 10ms has passed since the last time the key state was updated, we can update the key state
             // Calling GetKeyState too rapidly causes the emulation thread to slow to a grind
-            if ((TimeNow - LastCheckTime[Key]) > (SystemConfig.ONE_BILLION / 100))
+            if ((TimeNow - LastCheckTime[Key]) > (SystemConst.ONE_BILLION / 100))
             {
                 // Set last check time to current time
                 LastCheckTime[Key] = TimeNow;

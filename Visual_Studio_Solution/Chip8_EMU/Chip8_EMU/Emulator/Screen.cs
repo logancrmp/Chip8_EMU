@@ -53,7 +53,7 @@ namespace Chip8_EMU.Emulator
             PipelineWorker.RunWorkerCompleted += PipelineComplete;
 
             ScreenTimerHandle = Clock.AddTimer(TriggerGraphicsPipeline);
-            Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.FRAME_RATE), true);
+            Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
         }
 
 
@@ -143,7 +143,7 @@ namespace Chip8_EMU.Emulator
             if (framecounter % 60 == 0)
             {
                 TimeNow = Clock.GetRealTimeNow();
-                fps = (60 * (long)SystemConfig.ONE_BILLION) / ((TimeNow - LastTime) + 1);
+                fps = (60 * (long)SystemConst.ONE_BILLION) / ((TimeNow - LastTime) + 1);
                 LastTime = TimeNow;
             }
 

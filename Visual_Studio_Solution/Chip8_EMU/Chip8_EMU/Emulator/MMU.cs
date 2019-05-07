@@ -41,7 +41,7 @@ namespace Chip8_EMU.Emulator
 
         internal static bool PopFromStack(ref ushort Address)
         {
-            if (CPU.Registers.SP != SystemConfig.STACK_EMPTY)
+            if (CPU.Registers.SP != SystemConst.STACK_EMPTY)
             {
                 Address = Stack[CPU.Registers.SP];
             }

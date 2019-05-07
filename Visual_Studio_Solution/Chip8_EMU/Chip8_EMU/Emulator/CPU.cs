@@ -40,11 +40,11 @@ namespace Chip8_EMU.Emulator
 
             // Setup timer for core clock
             CoreTimerHandle = Clock.AddTimer(ExecCycle);
-            Clock.StartTimerCyclic(CoreTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.CPU_FREQ), false);
+            Clock.StartTimerCyclic(CoreTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
 
             // Setup timer for 60 Hz instruction sync
             SyncTimerHandler = Clock.AddTimer(null);
-            Clock.StartTimerCyclic(SyncTimerHandler, (SystemConfig.ONE_BILLION / 60), true);
+            Clock.StartTimerCyclic(SyncTimerHandler, (SystemConst.ONE_BILLION / 60), true);
         }
 
 
@@ -54,7 +54,7 @@ namespace Chip8_EMU.Emulator
 
             /* Load PC With Init Value Of Where Rom Will Be Loaded */
             Registers.PC = SystemConfig.HARDWARE_PC_INIT_ADDRESS;
-            Registers.SP = SystemConfig.STACK_EMPTY;
+            Registers.SP = SystemConst.STACK_EMPTY;
         }
 
 
@@ -65,7 +65,7 @@ namespace Chip8_EMU.Emulator
             if (InstructionCounter == SystemConfig.CPU_FREQ)
             {
                 ulong TimeNow = Clock.GetRealTimeNow();
-                IPS = (InstructionCounter) / ((double)(TimeNow - SavedTime) / SystemConfig.ONE_BILLION);
+                IPS = (InstructionCounter) / ((double)(TimeNow - SavedTime) / SystemConst.ONE_BILLION);
                 SavedTime = TimeNow;
                 InstructionCounter = 0;
             }
@@ -100,7 +100,7 @@ namespace Chip8_EMU.Emulator
         {
             bool StackOverflow = false;
 
-            if (Registers.SP == SystemConfig.STACK_EMPTY)
+            if (Registers.SP == SystemConst.STACK_EMPTY)
             {
                 // set to the first real stack entry
                 Registers.SP = 0x00;
@@ -126,7 +126,7 @@ namespace Chip8_EMU.Emulator
             bool StackUnderflow = false;
 
             // check against moving the SP past the start of the stack
-            if (Registers.SP == SystemConfig.STACK_EMPTY)
+            if (Registers.SP == SystemConst.STACK_EMPTY)
             {
                 // stack underflow!
                 StackUnderflow = true;
@@ -140,7 +140,7 @@ namespace Chip8_EMU.Emulator
                 else
                 {
                     // stack is empty now!
-                    Registers.SP = SystemConfig.STACK_EMPTY;
+                    Registers.SP = SystemConst.STACK_EMPTY;
                 }
             }
 

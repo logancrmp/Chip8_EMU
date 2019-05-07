@@ -31,6 +31,6 @@ namespace Chip8_EMU.Emulator
         internal const ushort HARDWARE_PC_INIT_ADDRESS = 0x0200;
 
         internal const ushort MEMORY_SIZE = (4 * (KILOBYTE));
-        internal static ushort ROM_SIZE = (ushort) ROM.Internal_ROM.Count();
+        internal static ushort ROM_SIZE = (ushort) ROM.Boot_ROM.Count();
     }
 }

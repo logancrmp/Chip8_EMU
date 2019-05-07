@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Chip8_EMU.Emulator
 {
@@ -15,7 +16,11 @@ namespace Chip8_EMU.Emulator
             // clear RAM
             MemClr(0, SystemConfig.MEMORY_SIZE);
 
-            RomLoaded = ROM.LoadRom("ROM.ch8");
+            // Load the boot rom
+            MemCpyFromPtr(ROM.Boot_ROM, 0x0000, SystemConfig.ROM_SIZE);
+
+            // Load the external ROM
+            RomLoaded = LoadRom("ROM.ch8");
 
             return RomLoaded;
         }
@@ -111,7 +116,7 @@ namespace Chip8_EMU.Emulator
 
             while (DstIter < DstEnd)
             {
-                Memory[DstIter] = Src[SrcIter]; ;
+                Memory[DstIter] = Src[SrcIter];
 
                 DstIter += 1;
                 SrcIter += 1;
@@ -180,5 +185,30 @@ namespace Chip8_EMU.Emulator
             return true;
         }
 
+
+        internal static bool LoadRom(string FileName)
+        {
+            bool RomLoaded = false;
+
+            // open the binary file if it exists
+            if (File.Exists(FileName))
+            {
+                try
+                {
+                    byte[] fileBytes = File.ReadAllBytes(FileName);
+
+                    if (fileBytes.Length < (SystemConfig.MEMORY_SIZE - SystemConfig.HARDWARE_PC_INIT_ADDRESS))
+                    {
+                        // Copy the external ROM to memory
+                        MMU.MemCpyFromPtr(fileBytes, SystemConfig.HARDWARE_PC_INIT_ADDRESS, (ushort)fileBytes.Length);
+
+                        RomLoaded = true;
+                    }
+                }
+                catch { }
+            }
+
+            return RomLoaded;
+        }
     }
 }

@@ -662,7 +662,7 @@ namespace Chip8_EMU.Emulator
 
             if (CPU.Registers.DelayTimer > 0)
             {
-                Clock.SetTimerCyclic(CPU.DelayTimerHandle, SystemConfig.SIXTY_HZ_TICK_NS, false);
+                Clock.StartTimerCyclic(CPU.DelayTimerHandle, SystemConfig.SIXTY_HZ_TICK_NS, false);
             }
             else
             {
@@ -683,7 +683,7 @@ namespace Chip8_EMU.Emulator
 
             if (CPU.Registers.SoundTimer > 0)
             {
-                Clock.SetTimerCyclic(CPU.SoundTimerHandle, SystemConfig.SIXTY_HZ_TICK_NS, false);
+                Clock.StartTimerCyclic(CPU.SoundTimerHandle, SystemConfig.SIXTY_HZ_TICK_NS, false);
 
                 // need to add a speaker and interface for arbitrating start and stop across users
                 simpleSound.PlayLooping();

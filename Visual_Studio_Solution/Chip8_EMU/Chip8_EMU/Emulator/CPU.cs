@@ -35,14 +35,16 @@ namespace Chip8_EMU.Emulator
             InitRegisters();
 
             // Setup timers for delay registers
-            DelayTimerHandle = Clock.AddTimer(TimerTypeEnum.TimerOneShot, 0, DelayTimerCallback, false);
-            SoundTimerHandle = Clock.AddTimer(TimerTypeEnum.TimerOneShot, 0, SoundTimerCallback, false);
+            DelayTimerHandle = Clock.AddTimer(DelayTimerCallback);
+            SoundTimerHandle = Clock.AddTimer(SoundTimerCallback);
 
             // Setup timer for core clock
-            CoreTimerHandle = Clock.AddTimer(TimerTypeEnum.TimerRepeating, SystemConfig.CPU_FREQ, ExecCycle, false);
+            CoreTimerHandle = Clock.AddTimer(ExecCycle);
+            Clock.SetTimerCyclic(CoreTimerHandle, (SystemConfig.ONE_BILLION / SystemConfig.CPU_FREQ), false);
 
             // Setup timer for 60 Hz instruction sync
-            SyncTimerHandler = Clock.AddTimer(TimerTypeEnum.TimerRepeating, 60, null, false);
+            SyncTimerHandler = Clock.AddTimer(null);
+            Clock.SetTimerCyclic(SyncTimerHandler, (SystemConfig.ONE_BILLION / 60), true);
         }
 
 
@@ -62,7 +64,7 @@ namespace Chip8_EMU.Emulator
 
             if (InstructionCounter == SystemConfig.CPU_FREQ)
             {
-                ulong TimeNow = Clock.GetTimeNow();
+                ulong TimeNow = Clock.GetRealTimeNow();
                 IPS = (InstructionCounter) / ((double)(TimeNow - SavedTime) / SystemConfig.ONE_BILLION);
                 SavedTime = TimeNow;
                 InstructionCounter = 0;
@@ -152,6 +154,12 @@ namespace Chip8_EMU.Emulator
             if (Registers.DelayTimer > 0)
             {
                 Registers.DelayTimer -= 1;
+
+                // if transitioning from non-zero to zero
+                if (Registers.DelayTimer == 0)
+                {
+                    Clock.StopTimer(DelayTimerHandle);
+                }
             }
         }
 
@@ -167,6 +175,7 @@ namespace Chip8_EMU.Emulator
                 {
                     // need to add a speaker and interface for arbitrating start and stop across users
                     CPU_Instructions.simpleSound.Stop();
+                    Clock.StopTimer(SoundTimerHandle);
                 }
             }
         }

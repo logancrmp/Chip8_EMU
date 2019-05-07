@@ -433,30 +433,21 @@ namespace Chip8_EMU.Emulator
 
         private static ulong RefreshDeadline = 0;
         private static int DrawSpriteInstructionState = 0;
-        private static int TimeCounter = 0;
         internal static byte Instruction_DRAW_SPRITE_AT_COORD(ushort Instruction)
         {
             if (DrawSpriteInstructionState == 0)
             {
                 // block until 60Hz refresh
-                RefreshDeadline = Clock.GetTimerDeadline(CPU.SyncTimerHandler);
+                RefreshDeadline = Clock.GetNextRealtimeDeadline(CPU.SyncTimerHandler);
                 DrawSpriteInstructionState = 1;
-                TimeCounter = 0;
                 CPU.Registers.J_JumpFlag = 1;
             }
             else
             if (DrawSpriteInstructionState == 1)
             {
-                TimeCounter += 1;
-                
-                if (TimeCounter == (SystemConfig.CPU_FREQ / 100))
+                if (Clock.GetTimeNow() >= RefreshDeadline)
                 {
-                    TimeCounter = 0;
-
-                    if (Clock.GetTimeNow() >= RefreshDeadline)
-                    {
-                        DrawSpriteInstructionState = 2;
-                    }
+                    DrawSpriteInstructionState = 2;
                 }
 
                 CPU.Registers.J_JumpFlag = 1;
@@ -669,7 +660,14 @@ namespace Chip8_EMU.Emulator
 
             CPU.Registers.DelayTimer = CPU.Registers.GetVXRegValue(X);
 
-            Clock.SetTimer(CPU.DelayTimerHandle, ((ulong)CPU.Registers.DelayTimer) * SystemConfig.SIXTY_HZ_TICK_NS);
+            if (CPU.Registers.DelayTimer > 0)
+            {
+                Clock.SetTimerCyclic(CPU.DelayTimerHandle, SystemConfig.SIXTY_HZ_TICK_NS, false);
+            }
+            else
+            {
+                Clock.StopTimer(CPU.DelayTimerHandle);
+            }
 
             // 0 extra bytes used
             return 0;
@@ -685,7 +683,7 @@ namespace Chip8_EMU.Emulator
 
             if (CPU.Registers.SoundTimer > 0)
             {
-                Clock.SetTimer(CPU.SoundTimerHandle, ((ulong)CPU.Registers.SoundTimer) * SystemConfig.SIXTY_HZ_TICK_NS);
+                Clock.SetTimerCyclic(CPU.SoundTimerHandle, SystemConfig.SIXTY_HZ_TICK_NS, false);
 
                 // need to add a speaker and interface for arbitrating start and stop across users
                 simpleSound.PlayLooping();

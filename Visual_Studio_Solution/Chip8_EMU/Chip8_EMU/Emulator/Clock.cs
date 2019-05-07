@@ -38,41 +38,86 @@ namespace Chip8_EMU.Emulator
             return RandByte[0];
         }
 
-
-        internal static int AddTimer(TimerTypeEnum TimerType, ulong FrequencyHZ, TimerFncPtrType TimerNotification, bool SkipMissedDeadlines)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="TimerType"></param>
+        /// <param name="FrequencyHZ"></param>
+        /// <param name="TimerNotification"></param>
+        /// <param name="SkipMissedDeadlines">So the idea of it is if the timer has this flag set to false, </param>
+        /// <returns></returns>
+        internal static int AddTimer(TimerFncPtrType TimerNotification)
         {
-            if (!Timers.ContainsKey(TimerHandleCounter))
-            {
-                Timer NewTimer = new Timer();
+            Timer NewTimer = new Timer();
 
-                NewTimer.TimerType = TimerType;
-                NewTimer.TimerNotification = TimerNotification;
-                NewTimer.SkipMissedDeadlines = SkipMissedDeadlines;
-                NewTimer.TimeoutValue = ((ulong)(((double)SystemConfig.ONE_BILLION) / ((double)FrequencyHZ)));
+            NewTimer.TimerNotification = TimerNotification;
+            NewTimer.TimerActive = false;
 
-                Timers[TimerHandleCounter] = NewTimer;
-            }
+            Timers[TimerHandleCounter] = NewTimer;
 
             return TimerHandleCounter++;
         }
 
 
-        internal static void SetTimer(int TimerHandle, ulong TimeoutNanoSeconds)
+        internal static void SetTimerOneShot(int TimerHandle, ulong TimeoutNanoSeconds)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
-                if (Timers[TimerHandle].TimerType == TimerTypeEnum.TimerOneShot)
-                {
-                    Timers[TimerHandle].NextDeadline = GetRealTimeNow() + TimeoutNanoSeconds;
-                    Timers[TimerHandle].DeadlineHandled = false;
-                }
+                Timers[TimerHandle].TimerType = TimerTypeEnum.TimerOneShot;
+                Timers[TimerHandle].SkipMissedDeadlines = false;
+                Timers[TimerHandle].TimeoutValue = 0;
+                Timers[TimerHandle].TimerActive = true;
+
+                Timers[TimerHandle].NextDeadline = GetRealTimeNow() + TimeoutNanoSeconds;
+                Timers[TimerHandle].DeadlineHandled = false;
             }
         }
 
 
-        internal static ulong GetTimerDeadline(int TimerHandle)
+        internal static void SetTimerCyclic(int TimerHandle, ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
         {
-            return Timers[TimerHandle].NextDeadline;
+            if (Timers.ContainsKey(TimerHandle))
+            {
+                Timers[TimerHandle].TimerType = TimerTypeEnum.TimerRepeating;
+                Timers[TimerHandle].SkipMissedDeadlines = SkipMissedDeadlines;
+                Timers[TimerHandle].TimeoutValue = TimeoutNanoSeconds;
+                Timers[TimerHandle].TimerActive = true;
+
+                Timers[TimerHandle].NextDeadline = GetRealTimeNow() + TimeoutNanoSeconds;
+                Timers[TimerHandle].DeadlineHandled = false;
+            }
+        }
+
+
+        internal static ulong GetNextRealtimeDeadline(int TimerHandle)
+        {
+            ulong Deadline = 0;
+
+            if (Timers.ContainsKey(TimerHandle))
+            {
+                // find the next deadline for the timer that is greater than the current clock time
+                var ClockMod = ClockTime % Timers[TimerHandle].TimeoutValue;
+
+                if (ClockMod == 0)
+                {
+                    Deadline = ClockTime + Timers[TimerHandle].TimeoutValue;
+                }
+                else
+                {
+                    Deadline = ClockTime + (Timers[TimerHandle].TimeoutValue - ClockMod);
+                }
+            }
+
+            return Deadline;
+        }
+
+
+        internal static void StartTimer(int TimerHandle)
+        {
+            if (Timers.ContainsKey(TimerHandle))
+            {
+                Timers[TimerHandle].TimerActive = true;
+            }
         }
 
 
@@ -80,11 +125,7 @@ namespace Chip8_EMU.Emulator
         {
             if (Timers.ContainsKey(TimerHandle))
             {
-                if (Timers[TimerHandle].TimerType == TimerTypeEnum.TimerOneShot)
-                {
-                    Timers[TimerHandle].NextDeadline = 0;
-                    Timers[TimerHandle].DeadlineHandled = true;
-                }
+                Timers[TimerHandle].TimerActive = false;
             }
         }
 
@@ -100,8 +141,8 @@ namespace Chip8_EMU.Emulator
                 }
                 else
                 {
-                    timer.NextDeadline = 0;
-                    timer.DeadlineHandled = true;
+                    timer.NextDeadline = GetRealTimeNow() + timer.TimeoutValue;
+                    timer.DeadlineHandled = false;
                 }
             }
 
@@ -115,11 +156,16 @@ namespace Chip8_EMU.Emulator
 
                 foreach (var timer in Timers.Values)
                 {
+                    if (timer.TimerActive == false)
+                    {
+                        continue;
+                    }
+
                     TimerExecCntr = 0;
 
                     // timer will execute as many deadlines as possible until either the timer has caught
                     // up with real time, or (1/X0)th of a second of cpu time has been emulated
-                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ / (SystemConfig.FRAME_RATE * 2)))
+                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ >> 7))
                     {
                         TimerExecCntr++;
                         timer.DeadlineHandled = true;
@@ -131,8 +177,17 @@ namespace Chip8_EMU.Emulator
                         {
                             if (timer.SkipMissedDeadlines)
                             {
-                                // increment from time now
-                                timer.NextDeadline = (ClockTime + timer.TimeoutValue);
+                                // find the next deadline for the timer that is greater than the current clock time
+                                var ClockMod = ClockTime % timer.TimeoutValue;
+
+                                if (ClockMod == 0)
+                                {
+                                    timer.NextDeadline = ClockTime + timer.TimeoutValue;
+                                }
+                                else
+                                {
+                                    timer.NextDeadline = ClockTime + (timer.TimeoutValue - ClockMod);
+                                }
                             }
                             else
                             {
@@ -153,7 +208,10 @@ namespace Chip8_EMU.Emulator
 
                 // sleep for a few ms. Gives graphics thread time to
                 // run, and cpu will catch up on next timer exec
-                System.Threading.Thread.Sleep(0);
+                    if (SystemConfig.PERFORMANCE_LEVEL > 0)
+                    {
+                        System.Threading.Thread.Sleep(SystemConfig.PERFORMANCE_LEVEL - 1);
+                    }
             }
         }
 
@@ -174,6 +232,8 @@ namespace Chip8_EMU.Emulator
     class Timer
     {
         internal TimerTypeEnum TimerType;
+
+        internal bool TimerActive;
 
         // next deadline in absolute nanoseconds from time 0
         internal ulong NextDeadline;

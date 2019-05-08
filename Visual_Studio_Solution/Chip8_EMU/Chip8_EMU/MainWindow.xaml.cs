@@ -16,8 +16,6 @@ namespace Chip8_EMU
         public MainWindow()
         {
             InitializeComponent();
-
-            CPU_Instructions.ParentWindow = this;
         }
 
 

@@ -13,10 +13,6 @@ namespace Chip8_EMU.Emulator
         // need to add to a speaker component!!!
         internal static SoundPlayer simpleSound = new SoundPlayer("tone.wav");
 
-        
-
-        internal static MainWindow ParentWindow;
-
 
         internal static byte Instruction_NOP(ushort Instruction)
         {
@@ -424,7 +420,7 @@ namespace Chip8_EMU.Emulator
             byte NN = (byte)(Instruction & 0xFF);
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
-            CPU.Registers.SetVXRegValue(X, (byte)(Clock.GetRandByte() & NN));
+            CPU.Registers.SetVXRegValue(X, (byte)(CPU.GetRandByte() & NN));
 
             // 0 extra bytes used
             return 0;

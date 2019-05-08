@@ -16,7 +16,7 @@ namespace Chip8_EMU.Emulator
         private bool[] StoredKeyState = new bool[0x10];
 
 
-        internal void InitKeyboard()
+        internal Keyboard()
         {
             for (int Iter = 0; Iter < 0x10; Iter += 1)
             {

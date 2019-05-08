@@ -3,13 +3,13 @@ using System.IO;
 
 namespace Chip8_EMU.Emulator
 {
-    static class MMU
+    internal class MMU
     {
-        private static byte[] Memory = new byte[SystemConfig.MEMORY_SIZE];
-        private static ushort[] Stack = new ushort[SystemConfig.STACK_SIZE];
+        private byte[] Memory = new byte[SystemConfig.MEMORY_SIZE];
+        private ushort[] Stack = new ushort[SystemConfig.STACK_SIZE];
 
 
-        internal static bool InitMemory()
+        internal bool InitMemory()
         {
             bool RomLoaded = false;
 
@@ -26,39 +26,39 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static bool PushToStack(ushort Address)
+        internal bool PushToStack(ushort Address)
         {
-            bool Overflow = CPU.IncStackPointer();
+            bool Overflow = EmuRunner.C8_CPU.IncStackPointer();
 
             if (Overflow == false)
             {
-                Stack[CPU.Registers.SP] = Address;
+                Stack[EmuRunner.C8_CPU.Registers.SP] = Address;
             }
 
             return Overflow;
         }
 
 
-        internal static bool PopFromStack(ref ushort Address)
+        internal bool PopFromStack(ref ushort Address)
         {
-            if (CPU.Registers.SP != SystemConst.STACK_EMPTY)
+            if (EmuRunner.C8_CPU.Registers.SP != SystemConst.STACK_EMPTY)
             {
-                Address = Stack[CPU.Registers.SP];
+                Address = Stack[EmuRunner.C8_CPU.Registers.SP];
             }
 
-            bool Underflow = CPU.DecStackPointer();
+            bool Underflow = EmuRunner.C8_CPU.DecStackPointer();
 
             return Underflow;
         }
 
 
-        internal static UInt16 ReadInstruction()
+        internal UInt16 ReadInstruction()
         {
-            return (UInt16)((UInt16)(Memory[CPU.Registers.PC] << 8) | Memory[CPU.Registers.PC + 1]);
+            return (UInt16)((UInt16)(Memory[EmuRunner.C8_CPU.Registers.PC] << 8) | Memory[EmuRunner.C8_CPU.Registers.PC + 1]);
         }
 
 
-        internal static bool MemCpyToPtr(ushort Src, out byte[] Dst, ushort NumBytes)
+        internal bool MemCpyToPtr(ushort Src, out byte[] Dst, ushort NumBytes)
         {
             ushort SrcStart = Src;
             ushort SrcEnd = (ushort)(Src + NumBytes);
@@ -94,7 +94,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void MemCpyFromPtr(byte[] Src, ushort Dst, ushort NumBytes)
+        internal void MemCpyFromPtr(byte[] Src, ushort Dst, ushort NumBytes)
         {
             ushort DstStart = Dst;
             ushort DstEnd = (ushort)(Dst + NumBytes);
@@ -106,7 +106,7 @@ namespace Chip8_EMU.Emulator
                 ((SystemConfig.MEMORY_SIZE - Dst) < NumBytes)
             )
             {
-                CPU.EnterTrap(TrapSourceEnum.MemoryAccessOutOfBounds, ReadInstruction());
+                EmuRunner.C8_CPU.EnterTrap(TrapSourceEnum.MemoryAccessOutOfBounds, ReadInstruction());
             }
 
             // add check permissions of memory region vs accessor
@@ -124,7 +124,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static bool MemCpy(ushort Src, ushort Dst, ushort NumBytes)
+        internal bool MemCpy(ushort Src, ushort Dst, ushort NumBytes)
         {
             ushort SrcStart = Src;
             ushort SrcEnd = (ushort)(Src + NumBytes);
@@ -163,7 +163,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static bool MemClr(ushort Dst, ushort NumBytes)
+        internal bool MemClr(ushort Dst, ushort NumBytes)
         {
             ushort DstStart = Dst;
             ushort DstEnd = (ushort)(Dst + NumBytes);
@@ -186,7 +186,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static bool LoadRom(string FileName)
+        internal bool LoadRom(string FileName)
         {
             bool RomLoaded = false;
 
@@ -200,7 +200,7 @@ namespace Chip8_EMU.Emulator
                     if (fileBytes.Length < (SystemConfig.MEMORY_SIZE - SystemConfig.HARDWARE_PC_INIT_ADDRESS))
                     {
                         // Copy the external ROM to memory
-                        MMU.MemCpyFromPtr(fileBytes, SystemConfig.HARDWARE_PC_INIT_ADDRESS, (ushort)fileBytes.Length);
+                        EmuRunner.C8_MMU.MemCpyFromPtr(fileBytes, SystemConfig.HARDWARE_PC_INIT_ADDRESS, (ushort)fileBytes.Length);
 
                         RomLoaded = true;
                     }

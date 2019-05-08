@@ -27,18 +27,7 @@ namespace Chip8_EMU
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            // if not run before
-            {
-                // open browse dialog
-
-                // select rom
-
-                // send rom to MMU, load it
-
-                // get everything ready
-
-                Run();
-            }
+            Run();
         }
 
         

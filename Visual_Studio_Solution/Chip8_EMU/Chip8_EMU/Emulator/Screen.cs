@@ -11,9 +11,11 @@ namespace Chip8_EMU.Emulator
     {
         Rect rectStruct = new Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
 
+        internal static WriteableBitmap bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, Screen.pixelFormat, null);
+
         protected override void OnRender(DrawingContext drawingContext)
         {
-            drawingContext.DrawImage(EmuRunner.C8_Screen.bitmap, rectStruct);
+            drawingContext.DrawImage(VideoFrame.bitmap, rectStruct);
         }
     }
 
@@ -26,9 +28,8 @@ namespace Chip8_EMU.Emulator
 
         internal byte[] FrameBuffer;
         internal int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
-        internal byte[][] EMU_FRAME; // array of arrays was roughly 7-8 percentage points lower cpu usage that 2d array
+        internal byte[][] EMU_FRAME; // array of arrays was roughly 7-8 percentage points lower cpu usage than 2d array
         internal object __EmuFrame_Lock = new object();
-        internal WriteableBitmap bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, pixelFormat, null);
 
         internal int ScreenTimerHandle = 0xFF;
 
@@ -37,9 +38,9 @@ namespace Chip8_EMU.Emulator
         private object __PipelineActive_Lock = new object();
 
 
-        internal void InitScreen(MainWindow ParentWindow)
+        internal Screen(MainWindow ParentWindow)
         {
-            EmuRunner.C8_Screen.ParentWindow = ParentWindow;
+            this.ParentWindow = ParentWindow;
 
             FrameBuffer = new byte[SystemConfig.DRAW_FRAME_HEIGHT * Stride];
             EMU_FRAME = new byte[SystemConfig.EMU_SCREEN_HEIGHT][];
@@ -51,7 +52,11 @@ namespace Chip8_EMU.Emulator
 
             PipelineWorker.DoWork += GraphicsPipeline;
             PipelineWorker.RunWorkerCompleted += PipelineComplete;
+        }
 
+
+        internal void SetupClocks()
+        {
             ScreenTimerHandle = EmuRunner.C8_Clock.AddTimer(TriggerGraphicsPipeline);
             EmuRunner.C8_Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
         }
@@ -152,7 +157,7 @@ namespace Chip8_EMU.Emulator
                 // copy the framebuffer to the output, and draw it to the screen
                 ParentWindow.customRender.Dispatcher.Invoke(() =>
                 {
-                    bitmap.WritePixels(rect, FrameBuffer, Stride, 0);
+                    VideoFrame.bitmap.WritePixels(rect, FrameBuffer, Stride, 0);
 
                     if (framecounter % 60 == 0)
                     {

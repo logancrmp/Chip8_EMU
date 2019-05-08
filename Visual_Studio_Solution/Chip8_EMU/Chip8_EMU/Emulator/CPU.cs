@@ -32,10 +32,14 @@ namespace Chip8_EMU.Emulator
         internal double IPS = 0;
 
 
-        internal void InitCPU()
+        internal CPU()
         {
             InitRegisters();
+        }
 
+
+        internal void SetupClocks()
+        {
             // Setup timers for delay registers
             DelayTimerHandle = EmuRunner.C8_Clock.AddTimer(DelayTimerCallback);
             SoundTimerHandle = EmuRunner.C8_Clock.AddTimer(SoundTimerCallback);

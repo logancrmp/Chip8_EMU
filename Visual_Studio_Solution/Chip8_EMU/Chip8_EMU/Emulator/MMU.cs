@@ -9,20 +9,13 @@ namespace Chip8_EMU.Emulator
         private ushort[] Stack = new ushort[SystemConfig.STACK_SIZE];
 
 
-        internal bool InitMemory()
+        internal MMU()
         {
-            bool RomLoaded = false;
-
             // clear RAM
             MemClr(0, SystemConfig.MEMORY_SIZE);
 
             // Load the boot rom
             MemCpyFromPtr(ROM.Boot_ROM, 0x0000, SystemConfig.ROM_SIZE);
-
-            // Load the external ROM
-            RomLoaded = LoadRom("ROM.ch8");
-
-            return RomLoaded;
         }
 
 

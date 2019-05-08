@@ -12,24 +12,30 @@ namespace Chip8_EMU
     {
         private static BackgroundWorker EmuWorker = null;
 
-        internal static MMU C8_MMU = new MMU();
-        internal static CPU C8_CPU = new CPU();
-        internal static Screen C8_Screen = new Screen();
-        internal static Keyboard C8_Keyboard = new Keyboard();
-        internal static Clock C8_Clock = new Clock();
+        internal static MMU C8_MMU;
+        internal static CPU C8_CPU;
+        internal static Screen C8_Screen;
+        internal static Keyboard C8_Keyboard;
+        internal static Clock C8_Clock;
 
         internal static void RunEmulator(MainWindow DisplayWindow)
         {
             if (EmuWorker == null)
             {
+                C8_MMU = new MMU();
+                C8_CPU = new CPU();
+                C8_Screen = new Screen(DisplayWindow);
+                C8_Keyboard = new Keyboard();
+                C8_Clock = new Clock();
+
+                C8_CPU.SetupClocks();
+                C8_Screen.SetupClocks();
+
                 EmuWorker = new BackgroundWorker();
 
                 EmuWorker.DoWork += DoWork;
 
-                bool RomLoaded = C8_MMU.InitMemory();
-                C8_CPU.InitCPU();
-                C8_Screen.InitScreen(DisplayWindow);
-                C8_Keyboard.InitKeyboard();
+                C8_MMU.LoadRom("ROM.ch8");
 
                 EmuWorker.RunWorkerAsync();
             }

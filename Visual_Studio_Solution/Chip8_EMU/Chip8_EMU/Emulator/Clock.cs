@@ -20,8 +20,6 @@ namespace Chip8_EMU.Emulator
 
     static class Clock
     {
-        private static Random random = new Random();
-
         private static Dictionary<int, Timer> Timers = new Dictionary<int, Timer>();
         private static int TimerHandleCounter = 0;
 
@@ -29,14 +27,6 @@ namespace Chip8_EMU.Emulator
         private static Stopwatch ClockSource = new Stopwatch();
 
         private static ulong ClockTime = 0;
-
-
-        internal static byte GetRandByte()
-        {
-            byte[] RandByte = new byte[1];
-            random.NextBytes(RandByte);
-            return RandByte[0];
-        }
 
 
         internal static int AddTimer(TimerFncPtrType TimerNotification)

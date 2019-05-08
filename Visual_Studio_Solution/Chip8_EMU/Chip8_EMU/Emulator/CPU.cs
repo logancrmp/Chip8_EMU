@@ -20,6 +20,8 @@ namespace Chip8_EMU.Emulator
     {
         internal static RegisterMap Registers;
 
+        private static Random random = new Random();
+
         internal static int DelayTimerHandle = 0xFF;
         internal static int SoundTimerHandle = 0xFF;
         internal static int CoreTimerHandle = 0xFF;
@@ -148,7 +150,14 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        // todo: make decrement in real time
+        internal static byte GetRandByte()
+        {
+            byte[] RandByte = new byte[1];
+            random.NextBytes(RandByte);
+            return RandByte[0];
+        }
+
+
         internal static void DelayTimerCallback()
         {
             if (Registers.DelayTimer > 0)

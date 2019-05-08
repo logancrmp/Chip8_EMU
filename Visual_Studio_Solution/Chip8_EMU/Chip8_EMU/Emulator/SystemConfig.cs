@@ -2,7 +2,7 @@
 
 namespace Chip8_EMU.Emulator
 {
-    static class SystemConst
+    class SystemConst
     {
         internal const ushort KILOBYTE = 0x0400;
         internal const uint ONE_BILLION = 1000000000;

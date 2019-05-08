@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 
 namespace Chip8_EMU.Emulator
 {
-    internal static class Keyboard
+    internal class Keyboard
     {
         [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         private static extern short GetKeyState(int keyCode);
 
-        private static ulong[] LastCheckTime = new ulong[0x10];
-        private static bool[] StoredKeyState = new bool[0x10];
+        private ulong[] LastCheckTime = new ulong[0x10];
+        private bool[] StoredKeyState = new bool[0x10];
 
 
-        internal static void InitKeyboard()
+        internal void InitKeyboard()
         {
             for (int Iter = 0; Iter < 0x10; Iter += 1)
             {
@@ -26,9 +26,9 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static bool IsKeyPressed(int Key)
+        internal bool IsKeyPressed(int Key)
         {
-            ulong TimeNow = Clock.GetTimeNow();
+            ulong TimeNow = EmuRunner.C8_Clock.GetTimeNow();
 
             // If at least 10ms has passed since the last time the key state was updated, we can update the key state
             // Calling GetKeyState too rapidly causes the emulation thread to slow to a grind

@@ -8,9 +8,15 @@ using System.Threading.Tasks;
 
 namespace Chip8_EMU
 {
-    static class EmuRunner
+    class EmuRunner
     {
         private static BackgroundWorker EmuWorker = null;
+
+        internal static MMU C8_MMU = new MMU();
+        internal static CPU C8_CPU = new CPU();
+        internal static Screen C8_Screen = new Screen();
+        internal static Keyboard C8_Keyboard = new Keyboard();
+        internal static Clock C8_Clock = new Clock();
 
         internal static void RunEmulator(MainWindow DisplayWindow)
         {
@@ -20,10 +26,10 @@ namespace Chip8_EMU
 
                 EmuWorker.DoWork += DoWork;
 
-                bool RomLoaded = MMU.InitMemory();
-                CPU.InitCPU();
-                Screen.InitScreen(DisplayWindow);
-                Keyboard.InitKeyboard();
+                bool RomLoaded = C8_MMU.InitMemory();
+                C8_CPU.InitCPU();
+                C8_Screen.InitScreen(DisplayWindow);
+                C8_Keyboard.InitKeyboard();
 
                 EmuWorker.RunWorkerAsync();
             }
@@ -31,7 +37,7 @@ namespace Chip8_EMU
 
         private static void DoWork(object sender, DoWorkEventArgs e)
         {
-            Clock.RunClock();
+            C8_Clock.RunClock();
         }
     }
 }

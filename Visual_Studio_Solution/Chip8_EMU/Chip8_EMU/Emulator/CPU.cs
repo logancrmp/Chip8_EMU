@@ -16,41 +16,41 @@ enum TrapSourceEnum
 
 namespace Chip8_EMU.Emulator
 {
-    internal static class CPU
+    internal class CPU
     {
-        internal static RegisterMap Registers;
+        internal RegisterMap Registers;
 
-        private static Random random = new Random();
+        private Random random = new Random();
 
-        internal static int DelayTimerHandle = 0xFF;
-        internal static int SoundTimerHandle = 0xFF;
-        internal static int CoreTimerHandle = 0xFF;
-        internal static int SyncTimerHandler = 0xFF;
+        internal int DelayTimerHandle = 0xFF;
+        internal int SoundTimerHandle = 0xFF;
+        internal int CoreTimerHandle = 0xFF;
+        internal int SyncTimerHandler = 0xFF;
 
-        private static ulong InstructionCounter = 0;
-        private static ulong SavedTime = 0;
-        internal static double IPS = 0;
+        private ulong InstructionCounter = 0;
+        private ulong SavedTime = 0;
+        internal double IPS = 0;
 
 
-        internal static void InitCPU()
+        internal void InitCPU()
         {
             InitRegisters();
 
             // Setup timers for delay registers
-            DelayTimerHandle = Clock.AddTimer(DelayTimerCallback);
-            SoundTimerHandle = Clock.AddTimer(SoundTimerCallback);
+            DelayTimerHandle = EmuRunner.C8_Clock.AddTimer(DelayTimerCallback);
+            SoundTimerHandle = EmuRunner.C8_Clock.AddTimer(SoundTimerCallback);
 
             // Setup timer for core clock
-            CoreTimerHandle = Clock.AddTimer(ExecCycle);
-            Clock.StartTimerCyclic(CoreTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
+            CoreTimerHandle = EmuRunner.C8_Clock.AddTimer(ExecCycle);
+            EmuRunner.C8_Clock.StartTimerCyclic(CoreTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
 
             // Setup timer for 60 Hz instruction sync
-            SyncTimerHandler = Clock.AddTimer(null);
-            Clock.StartTimerCyclic(SyncTimerHandler, (SystemConst.ONE_BILLION / 60), true);
+            SyncTimerHandler = EmuRunner.C8_Clock.AddTimer(null);
+            EmuRunner.C8_Clock.StartTimerCyclic(SyncTimerHandler, (SystemConst.ONE_BILLION / 60), true);
         }
 
 
-        internal static void InitRegisters()
+        internal void InitRegisters()
         {
             Registers.ClearRegisters();
 
@@ -60,13 +60,13 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void ExecCycle()
+        internal void ExecCycle()
         {
             InstructionCounter += 1;
 
             if (InstructionCounter == SystemConfig.CPU_FREQ)
             {
-                ulong TimeNow = Clock.GetRealTimeNow();
+                ulong TimeNow = EmuRunner.C8_Clock.GetRealTimeNow();
                 IPS = (InstructionCounter) / ((double)(TimeNow - SavedTime) / SystemConst.ONE_BILLION);
                 SavedTime = TimeNow;
                 InstructionCounter = 0;
@@ -98,7 +98,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static bool IncStackPointer()
+        internal bool IncStackPointer()
         {
             bool StackOverflow = false;
 
@@ -123,7 +123,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static bool DecStackPointer()
+        internal bool DecStackPointer()
         {
             bool StackUnderflow = false;
 
@@ -150,7 +150,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte GetRandByte()
+        internal byte GetRandByte()
         {
             byte[] RandByte = new byte[1];
             random.NextBytes(RandByte);
@@ -158,7 +158,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void DelayTimerCallback()
+        internal void DelayTimerCallback()
         {
             if (Registers.DelayTimer > 0)
             {
@@ -167,13 +167,13 @@ namespace Chip8_EMU.Emulator
                 // if transitioning from non-zero to zero
                 if (Registers.DelayTimer == 0)
                 {
-                    Clock.StopTimer(DelayTimerHandle);
+                    EmuRunner.C8_Clock.StopTimer(DelayTimerHandle);
                 }
             }
         }
 
 
-        internal static void SoundTimerCallback()
+        internal void SoundTimerCallback()
         {
             if (Registers.SoundTimer > 0)
             {
@@ -184,22 +184,22 @@ namespace Chip8_EMU.Emulator
                 {
                     // need to add a speaker and interface for arbitrating start and stop across users
                     CPU_Instructions.simpleSound.Stop();
-                    Clock.StopTimer(SoundTimerHandle);
+                    EmuRunner.C8_Clock.StopTimer(SoundTimerHandle);
                 }
             }
         }
 
 
-        internal static void EnterTrap(TrapSourceEnum TrapSource, UInt16 TrapInstruction)
+        internal void EnterTrap(TrapSourceEnum TrapSource, UInt16 TrapInstruction)
         {
             while (true) { }
         }
 
 
-        internal static void ExecuteInstruction()
+        internal void ExecuteInstruction()
         {
             // read memory at program counter location
-            UInt16 Instruction = MMU.ReadInstruction();
+            UInt16 Instruction = EmuRunner.C8_MMU.ReadInstruction();
 
             // Ref: https://en.wikipedia.org/wiki/CHIP-8#Opcode_table
             switch (Instruction >> 12)

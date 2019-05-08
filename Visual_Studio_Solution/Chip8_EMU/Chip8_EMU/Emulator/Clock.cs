@@ -18,18 +18,18 @@ namespace Chip8_EMU.Emulator
     public delegate void TimerFncPtrType();
 
 
-    static class Clock
+    internal class Clock
     {
-        private static Dictionary<int, Timer> Timers = new Dictionary<int, Timer>();
-        private static int TimerHandleCounter = 0;
+        private Dictionary<int, Timer> Timers = new Dictionary<int, Timer>();
+        private int TimerHandleCounter = 0;
 
-        private static DateTime TimeZeroOffset = DateTime.UtcNow;
-        private static Stopwatch ClockSource = new Stopwatch();
+        private DateTime TimeZeroOffset = DateTime.UtcNow;
+        private Stopwatch ClockSource = new Stopwatch();
 
-        private static ulong ClockTime = 0;
+        private ulong ClockTime = 0;
 
 
-        internal static int AddTimer(TimerFncPtrType TimerNotification)
+        internal int AddTimer(TimerFncPtrType TimerNotification)
         {
             Timer NewTimer = new Timer();
 
@@ -42,7 +42,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void StartTimerOneShot(int TimerHandle, ulong TimeoutNanoSeconds)
+        internal void StartTimerOneShot(int TimerHandle, ulong TimeoutNanoSeconds)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
@@ -57,7 +57,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void StartTimerCyclic(int TimerHandle, ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
+        internal void StartTimerCyclic(int TimerHandle, ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
@@ -72,7 +72,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static ulong GetNextRealtimeDeadline(int TimerHandle)
+        internal ulong GetNextRealtimeDeadline(int TimerHandle)
         {
             ulong Deadline = 0;
 
@@ -95,7 +95,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void StartTimer(int TimerHandle)
+        internal void StartTimer(int TimerHandle)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
@@ -104,7 +104,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void StopTimer(int TimerHandle)
+        internal void StopTimer(int TimerHandle)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
@@ -113,7 +113,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void RunClock()
+        internal void RunClock()
         {
             int TimerExecCntr = 0;
 
@@ -200,13 +200,13 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static ulong GetRealTimeNow()
+        internal ulong GetRealTimeNow()
         {
             return (ulong)(( ClockSource.ElapsedTicks * SystemConst.ONE_BILLION ) / Stopwatch.Frequency);
         }
 
 
-        internal static ulong GetTimeNow()
+        internal ulong GetTimeNow()
         {
             return ClockTime;
         }

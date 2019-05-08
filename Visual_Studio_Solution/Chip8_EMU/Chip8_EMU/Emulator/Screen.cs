@@ -13,33 +13,33 @@ namespace Chip8_EMU.Emulator
 
         protected override void OnRender(DrawingContext drawingContext)
         {
-            drawingContext.DrawImage(Screen.bitmap, rectStruct);
+            drawingContext.DrawImage(EmuRunner.C8_Screen.bitmap, rectStruct);
         }
     }
 
-    static class Screen
+    class Screen
     {
-        private static MainWindow ParentWindow;
+        private MainWindow ParentWindow;
         internal delegate void InvokeDelegate();
 
         internal static PixelFormat pixelFormat = PixelFormats.Rgb24;
 
-        internal static byte[] FrameBuffer;
-        internal static int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
-        internal static byte[][] EMU_FRAME; // array of arrays was roughly 7-8 percentage points lower cpu usage that 2d array
-        internal static object __EmuFrame_Lock = new object();
-        internal static WriteableBitmap bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, pixelFormat, null);
+        internal byte[] FrameBuffer;
+        internal int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
+        internal byte[][] EMU_FRAME; // array of arrays was roughly 7-8 percentage points lower cpu usage that 2d array
+        internal object __EmuFrame_Lock = new object();
+        internal WriteableBitmap bitmap = new WriteableBitmap(SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT, 96, 96, pixelFormat, null);
 
-        internal static int ScreenTimerHandle = 0xFF;
+        internal int ScreenTimerHandle = 0xFF;
 
-        private static BackgroundWorker PipelineWorker = new BackgroundWorker();
-        private static bool PipelineActive = false;
-        private static object __PipelineActive_Lock = new object();
+        private BackgroundWorker PipelineWorker = new BackgroundWorker();
+        private bool PipelineActive = false;
+        private object __PipelineActive_Lock = new object();
 
 
-        static internal void InitScreen(MainWindow ParentWindow)
+        internal void InitScreen(MainWindow ParentWindow)
         {
-            Screen.ParentWindow = ParentWindow;
+            EmuRunner.C8_Screen.ParentWindow = ParentWindow;
 
             FrameBuffer = new byte[SystemConfig.DRAW_FRAME_HEIGHT * Stride];
             EMU_FRAME = new byte[SystemConfig.EMU_SCREEN_HEIGHT][];
@@ -52,12 +52,12 @@ namespace Chip8_EMU.Emulator
             PipelineWorker.DoWork += GraphicsPipeline;
             PipelineWorker.RunWorkerCompleted += PipelineComplete;
 
-            ScreenTimerHandle = Clock.AddTimer(TriggerGraphicsPipeline);
-            Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
+            ScreenTimerHandle = EmuRunner.C8_Clock.AddTimer(TriggerGraphicsPipeline);
+            EmuRunner.C8_Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
         }
 
 
-        internal static void TriggerGraphicsPipeline()
+        internal void TriggerGraphicsPipeline()
         {
             bool PipelineActiveLocal = false;
 
@@ -89,7 +89,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void GraphicsPipeline(object sender, DoWorkEventArgs e)
+        internal void GraphicsPipeline(object sender, DoWorkEventArgs e)
         {
             CopyToFrameBuffer();
 
@@ -97,7 +97,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static void PipelineComplete(object sender, RunWorkerCompletedEventArgs e)
+        internal void PipelineComplete(object sender, RunWorkerCompletedEventArgs e)
         {
             lock (__PipelineActive_Lock)
             {
@@ -106,9 +106,9 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        static int ImgDivWidth = SystemConfig.DRAW_FRAME_WIDTH / SystemConfig.EMU_SCREEN_WIDTH;
-        static int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
-        static internal void CopyToFrameBuffer()
+        int ImgDivWidth = SystemConfig.DRAW_FRAME_WIDTH / SystemConfig.EMU_SCREEN_WIDTH;
+        int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
+        internal void CopyToFrameBuffer()
         {
             lock (__EmuFrame_Lock)
             {
@@ -131,18 +131,18 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        static double fps = 0;
-        static double TimeNow = 0;
-        static double LastTime = 0;
-        static long framecounter = 0;
-        static Int32Rect rect = new Int32Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
-        static internal void SyncDrawFrameToScreen()
+        double fps = 0;
+        double TimeNow = 0;
+        double LastTime = 0;
+        long framecounter = 0;
+        Int32Rect rect = new Int32Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
+        internal void SyncDrawFrameToScreen()
         {
             framecounter += 1;
 
             if (framecounter % 60 == 0)
             {
-                TimeNow = Clock.GetRealTimeNow();
+                TimeNow = EmuRunner.C8_Clock.GetRealTimeNow();
                 fps = (60 * (long)SystemConst.ONE_BILLION) / ((TimeNow - LastTime) + 1);
                 LastTime = TimeNow;
             }
@@ -156,7 +156,7 @@ namespace Chip8_EMU.Emulator
 
                     if (framecounter % 60 == 0)
                     {
-                        double CpuHz = CPU.IPS;
+                        double CpuHz = EmuRunner.C8_CPU.IPS;
                         var CpuStr = "";
                         if (CpuHz >= 1000000)
                         {

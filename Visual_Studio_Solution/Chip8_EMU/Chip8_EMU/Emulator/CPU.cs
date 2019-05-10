@@ -85,10 +85,7 @@ namespace Chip8_EMU.Emulator
                 InstructionCounter = 0;
             }
 
-            UInt16 Instruction = 0;
-            byte BytesUsedDuringInstruction = 0;
-
-            ExecuteInstruction();
+            byte BytesUsedDuringInstruction = ExecuteInstruction();
 
             // Instructions may set the jump flag to avoid having the program counter be incremented (e.x. jump instructions)
             if (Registers.J_JumpFlag == 0)
@@ -102,7 +99,7 @@ namespace Chip8_EMU.Emulator
                 }
                 else
                 {
-                    EnterTrap(TrapSourceEnum.ProgramCounterOutOfBounds, Instruction);
+                    EnterTrap(TrapSourceEnum.ProgramCounterOutOfBounds, 0x0000);
                 }
             }
 
@@ -209,8 +206,10 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal void ExecuteInstruction()
+        internal byte ExecuteInstruction()
         {
+            byte BytesUsedDuringInstruction = 0;
+
             // read memory at program counter location
             UInt16 Instruction = System.MMU.ReadInstruction();
 
@@ -225,14 +224,14 @@ namespace Chip8_EMU.Emulator
                         // Clear the screen
                         case 0x00E0:
                         {
-                            Instructions.Instruction_CLEAR_THE_SCREEN(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_CLEAR_THE_SCREEN(Instruction);
                             break;
                         }
 
                         // Return from subroutine
                         case 0x00EE:
                         {
-                            Instructions.Instruction_RETURN_FROM_SUBROUTINE(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_RETURN_FROM_SUBROUTINE(Instruction);
 
                             break;
                         }
@@ -251,7 +250,7 @@ namespace Chip8_EMU.Emulator
                 // Jump to address
                 case 0x1:
                 {
-                    Instructions.Instruction_JUMP_TO_ADDRESS(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_JUMP_TO_ADDRESS(Instruction);
 
                     break;
                 }
@@ -259,7 +258,7 @@ namespace Chip8_EMU.Emulator
                 // Call subroutine at address
                 case 0x2:
                 {
-                    Instructions.Instruction_CALL_SUBROUTINE_AT_ADDRESS(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_CALL_SUBROUTINE_AT_ADDRESS(Instruction);
 
                     break;
                 }
@@ -267,7 +266,7 @@ namespace Chip8_EMU.Emulator
                 // Compare and skip if equal
                 case 0x3:
                 {
-                    Instructions.Instruction_SKIP_IF_VX_EQUALS_NN(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_SKIP_IF_VX_EQUALS_NN(Instruction);
 
                     break;
                 }
@@ -275,7 +274,7 @@ namespace Chip8_EMU.Emulator
                 // Compare and skip if not equal
                 case 0x4:
                 {
-                    Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_NN(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_NN(Instruction);
 
                     break;
                 }
@@ -283,7 +282,7 @@ namespace Chip8_EMU.Emulator
                 // Compare and skip if equal
                 case 0x5:
                 {
-                    Instructions.Instruction_SKIP_IF_VX_EQUAL_VY(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_SKIP_IF_VX_EQUAL_VY(Instruction);
 
                     break;
                 }
@@ -291,7 +290,7 @@ namespace Chip8_EMU.Emulator
                 // Set VX to NN
                 case 0x6:
                 {
-                    Instructions.Instruction_SET_VX_TO_NN(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_NN(Instruction);
 
                     break;
                 }
@@ -299,7 +298,7 @@ namespace Chip8_EMU.Emulator
                 // Add NN to VX
                 case 0x7:
                 {
-                    Instructions.Instruction_ADD_NN_TO_VX(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_ADD_NN_TO_VX(Instruction);
 
                     break;
                 }
@@ -312,7 +311,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VY 
                         case 0x0:
                         {
-                            Instructions.Instruction_SET_VX_TO_VY(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VY(Instruction);
 
                             break;
                         }
@@ -320,7 +319,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX | VY
                         case 0x1:
                         {
-                            Instructions.Instruction_SET_VX_TO_VX_OR_VY(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VX_OR_VY(Instruction);
 
                             break;
                         }
@@ -328,7 +327,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX & VY
                         case 0x2:
                         {
-                            Instructions.Instruction_SET_VX_TO_VX_AND_VY(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VX_AND_VY(Instruction);
 
                             break;
                         }
@@ -336,7 +335,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX ^ VY
                         case 0x3:
                         {
-                            Instructions.Instruction_SET_VX_TO_VX_XOR_VY(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VX_XOR_VY(Instruction);
 
                             break;
                         }
@@ -344,7 +343,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX + VY
                         case 0x4:
                         {
-                            Instructions.Instruction_SET_VX_TO_VX_PLUS_VY(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VX_PLUS_VY(Instruction);
 
                             break;
                         }
@@ -352,7 +351,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX - VY
                         case 0x5:
                         {
-                            Instructions.Instruction_SET_VX_TO_VX_MINUS_VY(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VX_MINUS_VY(Instruction);
 
                             break;
                         }
@@ -360,7 +359,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX >> 1
                         case 0x6:
                         {
-                            Instructions.Instruction_SET_VX_TO_VX_RSHIFT_1(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VX_RSHIFT_1(Instruction);
 
                             break;
                         }
@@ -368,7 +367,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VY - VX
                         case 0x7:
                         {
-                            Instructions.Instruction_SET_VX_TO_VY_MINUS_VX(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VY_MINUS_VX(Instruction);
 
                             break;
                         }
@@ -376,7 +375,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX << 1
                         case 0xE:
                         {
-                            Instructions.Instruction_SET_VX_TO_VX_LSHIFT_1(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_VX_TO_VX_LSHIFT_1(Instruction);
 
                             break;
                         }
@@ -394,7 +393,7 @@ namespace Chip8_EMU.Emulator
                 // Skip if VX != VY
                 case 0x9:
                 {
-                    Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_VY(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_VY(Instruction);
 
                     break;
                 }
@@ -402,7 +401,7 @@ namespace Chip8_EMU.Emulator
                 // Set I to address
                 case 0xA:
                 {
-                    Instructions.Instruction_SET_I_TO_ADDRESS(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_SET_I_TO_ADDRESS(Instruction);
 
                     break;
                 }
@@ -410,7 +409,7 @@ namespace Chip8_EMU.Emulator
                 // Jump to address plus offset
                 case 0xB:
                 {
-                    Instructions.Instruction_JUMP_TO_ADDRESS_PLUS_V0(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_JUMP_TO_ADDRESS_PLUS_V0(Instruction);
 
                     break;
                 }
@@ -418,7 +417,7 @@ namespace Chip8_EMU.Emulator
                 // Set VX to rand & NN
                 case 0xC:
                 {
-                    Instructions.Instruction_VX_TO_RAND_AND_NN(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_VX_TO_RAND_AND_NN(Instruction);
 
                     break;
                 }
@@ -426,7 +425,7 @@ namespace Chip8_EMU.Emulator
                 // Draw sprite at coord X of size  8xN
                 case 0xD:
                 {
-                    Instructions.Instruction_DRAW_SPRITE_AT_COORD(Instruction);
+                    BytesUsedDuringInstruction = Instructions.Instruction_DRAW_SPRITE_AT_COORD(Instruction);
 
                     break;
                 }
@@ -439,7 +438,7 @@ namespace Chip8_EMU.Emulator
                         // skip if key pressed
                         case 0x9E:
                         {
-                            Instructions.Instruction_SKIP_IF_KEY_PRESSED(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SKIP_IF_KEY_PRESSED(Instruction);
 
                             break;
                         }
@@ -447,7 +446,7 @@ namespace Chip8_EMU.Emulator
                         // Skip if key not pressed
                         case 0xA1:
                         {
-                            Instructions.Instruction_SKIP_IF_KEY_NOT_PRESSED(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SKIP_IF_KEY_NOT_PRESSED(Instruction);
 
                             break;
                         }
@@ -470,7 +469,7 @@ namespace Chip8_EMU.Emulator
                         // Get delay timer
                         case 0x07:
                         {
-                            Instructions.Instruction_GET_DELAY_TIMER(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_GET_DELAY_TIMER(Instruction);
 
                             break;
                         }
@@ -478,7 +477,7 @@ namespace Chip8_EMU.Emulator
                         // Get key
                         case 0x0A:
                         {
-                            Instructions.Instruction_GET_PRESSED_KEY(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_GET_PRESSED_KEY(Instruction);
 
                             break;
                         }
@@ -486,7 +485,7 @@ namespace Chip8_EMU.Emulator
                         // Set delay timer
                         case 0x15:
                         {
-                            Instructions.Instruction_SET_DELAY_TIMER(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_DELAY_TIMER(Instruction);
 
                             break;
                         }
@@ -494,7 +493,7 @@ namespace Chip8_EMU.Emulator
                         // Set sound timer
                         case 0x18:
                         {
-                            Instructions.Instruction_SET_SOUND_TIMER(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_SET_SOUND_TIMER(Instruction);
 
                             break;
                         }
@@ -502,7 +501,7 @@ namespace Chip8_EMU.Emulator
                         // Add value of VX to I
                         case 0x1E:
                         {
-                            Instructions.Instruction_ADD_VX_TO_I(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_ADD_VX_TO_I(Instruction);
 
                             break;
                         }
@@ -518,7 +517,7 @@ namespace Chip8_EMU.Emulator
                         // 
                         case 0x33:
                         {
-                            Instructions.Instruction_STORE_BINARY_CODED_DECIMAL(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_STORE_BINARY_CODED_DECIMAL(Instruction);
 
                             break;
                         }
@@ -526,7 +525,7 @@ namespace Chip8_EMU.Emulator
                         // Store VX registers to location at I
                         case 0x55:
                         {
-                            Instructions.Instruction_STORE_REGISTERS(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_STORE_REGISTERS(Instruction);
 
                             break;
                         }
@@ -534,7 +533,7 @@ namespace Chip8_EMU.Emulator
                         // Load VX registers from location at I
                         case 0x65:
                         {
-                            Instructions.Instruction_LOAD_REGISTERS(Instruction);
+                            BytesUsedDuringInstruction = Instructions.Instruction_LOAD_REGISTERS(Instruction);
 
                             break;
                         }
@@ -555,6 +554,8 @@ namespace Chip8_EMU.Emulator
                     break;
                 }
             }
+
+            return BytesUsedDuringInstruction;
         }
     }
 }

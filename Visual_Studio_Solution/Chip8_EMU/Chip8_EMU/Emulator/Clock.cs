@@ -138,9 +138,9 @@ namespace Chip8_EMU.Emulator
 
                     TimerExecCntr = 0;
 
-                    // timer will execute as many deadlines as possible until either the timer has caught
-                    // up with real time, or (1/X0)th of a second of cpu time has been emulated
-                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ >> 7))
+                    // timer will execute as many deadlines as possible until either the timer
+                    // has caught up with real time, or at most 1ms of cpu time has been emulated
+                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ / 1000))
                     {
                         TimerExecCntr++;
                         timer.DeadlineHandled = true;

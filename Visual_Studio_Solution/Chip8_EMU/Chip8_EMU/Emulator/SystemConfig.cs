@@ -2,7 +2,7 @@
 
 namespace Chip8_EMU.Emulator
 {
-    class SystemConst
+    static class SystemConst
     {
         internal const ushort KILOBYTE = 0x0400;
         internal const uint ONE_BILLION = 1000000000;
@@ -16,7 +16,7 @@ namespace Chip8_EMU.Emulator
     {
         internal static char[] InputKeyMap = new char[] { 'S', 'B', 'C', 'T', 'A', 'S', 'D', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P' };
 
-        internal const int FRAME_RATE = 144;
+        internal const int FRAME_RATE = 120;
 
         internal const uint CPU_FREQ = 20000000;
 

@@ -5,12 +5,16 @@ namespace Chip8_EMU.Emulator
 {
     internal class MMU
     {
+        private Chip8 System;
+
         private byte[] Memory = new byte[SystemConfig.MEMORY_SIZE];
         private ushort[] Stack = new ushort[SystemConfig.STACK_SIZE];
 
 
-        internal MMU()
+        internal MMU(Chip8 System)
         {
+            this.System = System;
+
             // clear RAM
             MemClr(0, SystemConfig.MEMORY_SIZE);
 
@@ -21,11 +25,11 @@ namespace Chip8_EMU.Emulator
 
         internal bool PushToStack(ushort Address)
         {
-            bool Overflow = EmuRunner.C8_CPU.IncStackPointer();
+            bool Overflow = System.CPU.IncStackPointer();
 
             if (Overflow == false)
             {
-                Stack[EmuRunner.C8_CPU.Registers.SP] = Address;
+                Stack[System.CPU.Registers.SP] = Address;
             }
 
             return Overflow;
@@ -34,12 +38,12 @@ namespace Chip8_EMU.Emulator
 
         internal bool PopFromStack(ref ushort Address)
         {
-            if (EmuRunner.C8_CPU.Registers.SP != SystemConst.STACK_EMPTY)
+            if (System.CPU.Registers.SP != SystemConst.STACK_EMPTY)
             {
-                Address = Stack[EmuRunner.C8_CPU.Registers.SP];
+                Address = Stack[System.CPU.Registers.SP];
             }
 
-            bool Underflow = EmuRunner.C8_CPU.DecStackPointer();
+            bool Underflow = System.CPU.DecStackPointer();
 
             return Underflow;
         }
@@ -47,7 +51,7 @@ namespace Chip8_EMU.Emulator
 
         internal UInt16 ReadInstruction()
         {
-            return (UInt16)((UInt16)(Memory[EmuRunner.C8_CPU.Registers.PC] << 8) | Memory[EmuRunner.C8_CPU.Registers.PC + 1]);
+            return (UInt16)((UInt16)(Memory[System.CPU.Registers.PC] << 8) | Memory[System.CPU.Registers.PC + 1]);
         }
 
 
@@ -99,7 +103,7 @@ namespace Chip8_EMU.Emulator
                 ((SystemConfig.MEMORY_SIZE - Dst) < NumBytes)
             )
             {
-                EmuRunner.C8_CPU.EnterTrap(TrapSourceEnum.MemoryAccessOutOfBounds, ReadInstruction());
+                System.CPU.EnterTrap(TrapSourceEnum.MemoryAccessOutOfBounds, ReadInstruction());
             }
 
             // add check permissions of memory region vs accessor
@@ -193,7 +197,7 @@ namespace Chip8_EMU.Emulator
                     if (fileBytes.Length < (SystemConfig.MEMORY_SIZE - SystemConfig.HARDWARE_PC_INIT_ADDRESS))
                     {
                         // Copy the external ROM to memory
-                        EmuRunner.C8_MMU.MemCpyFromPtr(fileBytes, SystemConfig.HARDWARE_PC_INIT_ADDRESS, (ushort)fileBytes.Length);
+                        System.MMU.MemCpyFromPtr(fileBytes, SystemConfig.HARDWARE_PC_INIT_ADDRESS, (ushort)fileBytes.Length);
 
                         RomLoaded = true;
                     }

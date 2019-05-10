@@ -23,7 +23,6 @@ namespace Chip8_EMU.Emulator
         private Dictionary<int, Timer> Timers = new Dictionary<int, Timer>();
         private int TimerHandleCounter = 0;
 
-        private DateTime TimeZeroOffset = DateTime.UtcNow;
         private Stopwatch ClockSource = new Stopwatch();
 
         private ulong ClockTime = 0;
@@ -121,16 +120,8 @@ namespace Chip8_EMU.Emulator
 
             foreach (var timer in Timers.Values)
             {
-                if (timer.TimerType == TimerTypeEnum.TimerCyclic)
-                {
-                    timer.NextDeadline = GetRealTimeNow() + timer.TimeoutValue;
-                    timer.DeadlineHandled = false;
-                }
-                else
-                {
-                    timer.NextDeadline = GetRealTimeNow() + timer.TimeoutValue;
-                    timer.DeadlineHandled = false;
-                }
+                timer.NextDeadline = GetRealTimeNow() + timer.TimeoutValue;
+                timer.DeadlineHandled = false;
             }
             
             while (true)
@@ -162,7 +153,7 @@ namespace Chip8_EMU.Emulator
                             if (timer.SkipMissedDeadlines)
                             {
                                 // find the next deadline for the timer that is greater than the current clock time
-                                var ClockMod = ClockTime % timer.TimeoutValue;
+                                var ClockMod = ClockTime % timer.TimeoutValue; // remove division on every loop?
 
                                 if (ClockMod == 0)
                                 {

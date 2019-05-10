@@ -12,12 +12,16 @@ namespace Chip8_EMU.Emulator
         [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         private static extern short GetKeyState(int keyCode);
 
+        private Chip8 System;
+
         private ulong[] LastCheckTime = new ulong[0x10];
         private bool[] StoredKeyState = new bool[0x10];
 
 
-        internal Keyboard()
+        internal Keyboard(Chip8 System)
         {
+            this.System = System;
+
             for (int Iter = 0; Iter < 0x10; Iter += 1)
             {
                 LastCheckTime[Iter] = 0;
@@ -28,7 +32,7 @@ namespace Chip8_EMU.Emulator
 
         internal bool IsKeyPressed(int Key)
         {
-            ulong TimeNow = EmuRunner.C8_Clock.GetTimeNow();
+            ulong TimeNow = System.Clock.GetTimeNow();
 
             // If at least 10ms has passed since the last time the key state was updated, we can update the key state
             // Calling GetKeyState too rapidly causes the emulation thread to slow to a grind

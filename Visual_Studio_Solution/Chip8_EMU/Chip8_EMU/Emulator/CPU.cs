@@ -18,9 +18,13 @@ namespace Chip8_EMU.Emulator
 {
     internal class CPU
     {
+        private Chip8 System;
+
         internal RegisterMap Registers;
 
-        private Random random = new Random();
+        CPU_Instructions Instructions;
+
+        private Random random;
 
         internal int DelayTimerHandle = 0xFF;
         internal int SoundTimerHandle = 0xFF;
@@ -32,29 +36,18 @@ namespace Chip8_EMU.Emulator
         internal double IPS = 0;
 
 
-        internal CPU()
+        internal CPU(Chip8 System)
         {
+            this.System = System;
+
+            random = new Random();
+            Instructions = new CPU_Instructions(System);
+
             InitRegisters();
         }
 
 
-        internal void SetupClocks()
-        {
-            // Setup timers for delay registers
-            DelayTimerHandle = EmuRunner.C8_Clock.AddTimer(DelayTimerCallback);
-            SoundTimerHandle = EmuRunner.C8_Clock.AddTimer(SoundTimerCallback);
-
-            // Setup timer for core clock
-            CoreTimerHandle = EmuRunner.C8_Clock.AddTimer(ExecCycle);
-            EmuRunner.C8_Clock.StartTimerCyclic(CoreTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
-
-            // Setup timer for 60 Hz instruction sync
-            SyncTimerHandler = EmuRunner.C8_Clock.AddTimer(null);
-            EmuRunner.C8_Clock.StartTimerCyclic(SyncTimerHandler, (SystemConst.ONE_BILLION / 60), true);
-        }
-
-
-        internal void InitRegisters()
+        private void InitRegisters()
         {
             Registers.ClearRegisters();
 
@@ -64,13 +57,29 @@ namespace Chip8_EMU.Emulator
         }
 
 
+        internal void SetupClocks()
+        {
+            // Setup timers for delay registers
+            DelayTimerHandle = System.Clock.AddTimer(DelayTimerCallback);
+            SoundTimerHandle = System.Clock.AddTimer(SoundTimerCallback);
+
+            // Setup timer for core clock
+            CoreTimerHandle = System.Clock.AddTimer(ExecCycle);
+            System.Clock.StartTimerCyclic(CoreTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
+
+            // Setup timer for 60 Hz instruction sync
+            SyncTimerHandler = System.Clock.AddTimer(null);
+            System.Clock.StartTimerCyclic(SyncTimerHandler, (SystemConst.ONE_BILLION / 60), true);
+        }
+
+
         internal void ExecCycle()
         {
             InstructionCounter += 1;
 
             if (InstructionCounter == SystemConfig.CPU_FREQ)
             {
-                ulong TimeNow = EmuRunner.C8_Clock.GetRealTimeNow();
+                ulong TimeNow = System.Clock.GetRealTimeNow();
                 IPS = (InstructionCounter) / ((double)(TimeNow - SavedTime) / SystemConst.ONE_BILLION);
                 SavedTime = TimeNow;
                 InstructionCounter = 0;
@@ -171,7 +180,7 @@ namespace Chip8_EMU.Emulator
                 // if transitioning from non-zero to zero
                 if (Registers.DelayTimer == 0)
                 {
-                    EmuRunner.C8_Clock.StopTimer(DelayTimerHandle);
+                    System.Clock.StopTimer(DelayTimerHandle);
                 }
             }
         }
@@ -187,8 +196,8 @@ namespace Chip8_EMU.Emulator
                 if (Registers.SoundTimer == 0)
                 {
                     // need to add a speaker and interface for arbitrating start and stop across users
-                    CPU_Instructions.simpleSound.Stop();
-                    EmuRunner.C8_Clock.StopTimer(SoundTimerHandle);
+                    Instructions.simpleSound.Stop();
+                    System.Clock.StopTimer(SoundTimerHandle);
                 }
             }
         }
@@ -203,7 +212,7 @@ namespace Chip8_EMU.Emulator
         internal void ExecuteInstruction()
         {
             // read memory at program counter location
-            UInt16 Instruction = EmuRunner.C8_MMU.ReadInstruction();
+            UInt16 Instruction = System.MMU.ReadInstruction();
 
             // Ref: https://en.wikipedia.org/wiki/CHIP-8#Opcode_table
             switch (Instruction >> 12)
@@ -216,14 +225,14 @@ namespace Chip8_EMU.Emulator
                         // Clear the screen
                         case 0x00E0:
                         {
-                            CPU_Instructions.Instruction_CLEAR_THE_SCREEN(Instruction);
+                            Instructions.Instruction_CLEAR_THE_SCREEN(Instruction);
                             break;
                         }
 
                         // Return from subroutine
                         case 0x00EE:
                         {
-                            CPU_Instructions.Instruction_RETURN_FROM_SUBROUTINE(Instruction);
+                            Instructions.Instruction_RETURN_FROM_SUBROUTINE(Instruction);
 
                             break;
                         }
@@ -242,7 +251,7 @@ namespace Chip8_EMU.Emulator
                 // Jump to address
                 case 0x1:
                 {
-                    CPU_Instructions.Instruction_JUMP_TO_ADDRESS(Instruction);
+                    Instructions.Instruction_JUMP_TO_ADDRESS(Instruction);
 
                     break;
                 }
@@ -250,7 +259,7 @@ namespace Chip8_EMU.Emulator
                 // Call subroutine at address
                 case 0x2:
                 {
-                    CPU_Instructions.Instruction_CALL_SUBROUTINE_AT_ADDRESS(Instruction);
+                    Instructions.Instruction_CALL_SUBROUTINE_AT_ADDRESS(Instruction);
 
                     break;
                 }
@@ -258,7 +267,7 @@ namespace Chip8_EMU.Emulator
                 // Compare and skip if equal
                 case 0x3:
                 {
-                    CPU_Instructions.Instruction_SKIP_IF_VX_EQUALS_NN(Instruction);
+                    Instructions.Instruction_SKIP_IF_VX_EQUALS_NN(Instruction);
 
                     break;
                 }
@@ -266,7 +275,7 @@ namespace Chip8_EMU.Emulator
                 // Compare and skip if not equal
                 case 0x4:
                 {
-                    CPU_Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_NN(Instruction);
+                    Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_NN(Instruction);
 
                     break;
                 }
@@ -274,7 +283,7 @@ namespace Chip8_EMU.Emulator
                 // Compare and skip if equal
                 case 0x5:
                 {
-                    CPU_Instructions.Instruction_SKIP_IF_VX_EQUAL_VY(Instruction);
+                    Instructions.Instruction_SKIP_IF_VX_EQUAL_VY(Instruction);
 
                     break;
                 }
@@ -282,7 +291,7 @@ namespace Chip8_EMU.Emulator
                 // Set VX to NN
                 case 0x6:
                 {
-                    CPU_Instructions.Instruction_SET_VX_TO_NN(Instruction);
+                    Instructions.Instruction_SET_VX_TO_NN(Instruction);
 
                     break;
                 }
@@ -290,7 +299,7 @@ namespace Chip8_EMU.Emulator
                 // Add NN to VX
                 case 0x7:
                 {
-                    CPU_Instructions.Instruction_ADD_NN_TO_VX(Instruction);
+                    Instructions.Instruction_ADD_NN_TO_VX(Instruction);
 
                     break;
                 }
@@ -303,7 +312,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VY 
                         case 0x0:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VY(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VY(Instruction);
 
                             break;
                         }
@@ -311,7 +320,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX | VY
                         case 0x1:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VX_OR_VY(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VX_OR_VY(Instruction);
 
                             break;
                         }
@@ -319,7 +328,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX & VY
                         case 0x2:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VX_AND_VY(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VX_AND_VY(Instruction);
 
                             break;
                         }
@@ -327,7 +336,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX ^ VY
                         case 0x3:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VX_XOR_VY(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VX_XOR_VY(Instruction);
 
                             break;
                         }
@@ -335,7 +344,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX + VY
                         case 0x4:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VX_PLUS_VY(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VX_PLUS_VY(Instruction);
 
                             break;
                         }
@@ -343,7 +352,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX - VY
                         case 0x5:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VX_MINUS_VY(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VX_MINUS_VY(Instruction);
 
                             break;
                         }
@@ -351,7 +360,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX >> 1
                         case 0x6:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VX_RSHIFT_1(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VX_RSHIFT_1(Instruction);
 
                             break;
                         }
@@ -359,7 +368,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VY - VX
                         case 0x7:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VY_MINUS_VX(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VY_MINUS_VX(Instruction);
 
                             break;
                         }
@@ -367,7 +376,7 @@ namespace Chip8_EMU.Emulator
                         // Set VX to VX << 1
                         case 0xE:
                         {
-                            CPU_Instructions.Instruction_SET_VX_TO_VX_LSHIFT_1(Instruction);
+                            Instructions.Instruction_SET_VX_TO_VX_LSHIFT_1(Instruction);
 
                             break;
                         }
@@ -385,7 +394,7 @@ namespace Chip8_EMU.Emulator
                 // Skip if VX != VY
                 case 0x9:
                 {
-                    CPU_Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_VY(Instruction);
+                    Instructions.Instruction_SKIP_IF_VX_NOT_EQUAL_VY(Instruction);
 
                     break;
                 }
@@ -393,7 +402,7 @@ namespace Chip8_EMU.Emulator
                 // Set I to address
                 case 0xA:
                 {
-                    CPU_Instructions.Instruction_SET_I_TO_ADDRESS(Instruction);
+                    Instructions.Instruction_SET_I_TO_ADDRESS(Instruction);
 
                     break;
                 }
@@ -401,7 +410,7 @@ namespace Chip8_EMU.Emulator
                 // Jump to address plus offset
                 case 0xB:
                 {
-                    CPU_Instructions.Instruction_JUMP_TO_ADDRESS_PLUS_V0(Instruction);
+                    Instructions.Instruction_JUMP_TO_ADDRESS_PLUS_V0(Instruction);
 
                     break;
                 }
@@ -409,7 +418,7 @@ namespace Chip8_EMU.Emulator
                 // Set VX to rand & NN
                 case 0xC:
                 {
-                    CPU_Instructions.Instruction_VX_TO_RAND_AND_NN(Instruction);
+                    Instructions.Instruction_VX_TO_RAND_AND_NN(Instruction);
 
                     break;
                 }
@@ -417,7 +426,7 @@ namespace Chip8_EMU.Emulator
                 // Draw sprite at coord X of size  8xN
                 case 0xD:
                 {
-                    CPU_Instructions.Instruction_DRAW_SPRITE_AT_COORD(Instruction);
+                    Instructions.Instruction_DRAW_SPRITE_AT_COORD(Instruction);
 
                     break;
                 }
@@ -430,7 +439,7 @@ namespace Chip8_EMU.Emulator
                         // skip if key pressed
                         case 0x9E:
                         {
-                            CPU_Instructions.Instruction_SKIP_IF_KEY_PRESSED(Instruction);
+                            Instructions.Instruction_SKIP_IF_KEY_PRESSED(Instruction);
 
                             break;
                         }
@@ -438,7 +447,7 @@ namespace Chip8_EMU.Emulator
                         // Skip if key not pressed
                         case 0xA1:
                         {
-                            CPU_Instructions.Instruction_SKIP_IF_KEY_NOT_PRESSED(Instruction);
+                            Instructions.Instruction_SKIP_IF_KEY_NOT_PRESSED(Instruction);
 
                             break;
                         }
@@ -461,7 +470,7 @@ namespace Chip8_EMU.Emulator
                         // Get delay timer
                         case 0x07:
                         {
-                            CPU_Instructions.Instruction_GET_DELAY_TIMER(Instruction);
+                            Instructions.Instruction_GET_DELAY_TIMER(Instruction);
 
                             break;
                         }
@@ -469,7 +478,7 @@ namespace Chip8_EMU.Emulator
                         // Get key
                         case 0x0A:
                         {
-                            CPU_Instructions.Instruction_GET_PRESSED_KEY(Instruction);
+                            Instructions.Instruction_GET_PRESSED_KEY(Instruction);
 
                             break;
                         }
@@ -477,7 +486,7 @@ namespace Chip8_EMU.Emulator
                         // Set delay timer
                         case 0x15:
                         {
-                            CPU_Instructions.Instruction_SET_DELAY_TIMER(Instruction);
+                            Instructions.Instruction_SET_DELAY_TIMER(Instruction);
 
                             break;
                         }
@@ -485,7 +494,7 @@ namespace Chip8_EMU.Emulator
                         // Set sound timer
                         case 0x18:
                         {
-                            CPU_Instructions.Instruction_SET_SOUND_TIMER(Instruction);
+                            Instructions.Instruction_SET_SOUND_TIMER(Instruction);
 
                             break;
                         }
@@ -493,7 +502,7 @@ namespace Chip8_EMU.Emulator
                         // Add value of VX to I
                         case 0x1E:
                         {
-                            CPU_Instructions.Instruction_ADD_VX_TO_I(Instruction);
+                            Instructions.Instruction_ADD_VX_TO_I(Instruction);
 
                             break;
                         }
@@ -509,7 +518,7 @@ namespace Chip8_EMU.Emulator
                         // 
                         case 0x33:
                         {
-                            CPU_Instructions.Instruction_STORE_BINARY_CODED_DECIMAL(Instruction);
+                            Instructions.Instruction_STORE_BINARY_CODED_DECIMAL(Instruction);
 
                             break;
                         }
@@ -517,7 +526,7 @@ namespace Chip8_EMU.Emulator
                         // Store VX registers to location at I
                         case 0x55:
                         {
-                            CPU_Instructions.Instruction_STORE_REGISTERS(Instruction);
+                            Instructions.Instruction_STORE_REGISTERS(Instruction);
 
                             break;
                         }
@@ -525,7 +534,7 @@ namespace Chip8_EMU.Emulator
                         // Load VX registers from location at I
                         case 0x65:
                         {
-                            CPU_Instructions.Instruction_LOAD_REGISTERS(Instruction);
+                            Instructions.Instruction_LOAD_REGISTERS(Instruction);
 
                             break;
                         }

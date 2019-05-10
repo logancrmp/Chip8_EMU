@@ -10,9 +10,6 @@ namespace Chip8_EMU
     /// </summary>
     public partial class MainWindow : Window
     {
-
-        
-
         public MainWindow()
         {
             InitializeComponent();
@@ -27,13 +24,9 @@ namespace Chip8_EMU
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Run();
-        }
+            EmuRunner Runner = new EmuRunner();
 
-        
-        private void Run()
-        {
-            EmuRunner.RunEmulator(this);
+            Runner.RunEmulator(this);
         }
     }
 }

@@ -21,21 +21,30 @@ namespace Chip8_EMU.Emulator
 
     class Screen
     {
-        private MainWindow ParentWindow;
-        internal delegate void InvokeDelegate();
-
-        internal static PixelFormat pixelFormat = PixelFormats.Rgb24;
+        internal readonly static PixelFormat pixelFormat = PixelFormats.Rgb24;
+        internal readonly static int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
 
         internal byte[] FrameBuffer;
-        internal int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
         internal byte[][] EMU_FRAME; // array of arrays was roughly 7-8 percentage points lower cpu usage than 2d array
         internal object __EmuFrame_Lock = new object();
 
-        internal int ScreenTimerHandle = 0xFF;
+        private MainWindow ParentWindow;
 
+        private int ScreenTimerHandle = 0xFF;
+
+        // Vars for graphics thread
         private BackgroundWorker PipelineWorker = new BackgroundWorker();
         private bool PipelineActive = false;
         private object __PipelineActive_Lock = new object();
+
+        private double fps = 0;
+        private double TimeNow = 0;
+        private double LastTime = 0;
+        private long framecounter = 0;
+        private Int32Rect rect = new Int32Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
+
+        private const int ImgDivWidth = SystemConfig.DRAW_FRAME_WIDTH / SystemConfig.EMU_SCREEN_WIDTH;
+        private const int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
 
 
         internal Screen(MainWindow ParentWindow)
@@ -111,8 +120,6 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        int ImgDivWidth = SystemConfig.DRAW_FRAME_WIDTH / SystemConfig.EMU_SCREEN_WIDTH;
-        int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
         internal void CopyToFrameBuffer()
         {
             lock (__EmuFrame_Lock)
@@ -136,11 +143,6 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        double fps = 0;
-        double TimeNow = 0;
-        double LastTime = 0;
-        long framecounter = 0;
-        Int32Rect rect = new Int32Rect(0, 0, SystemConfig.DRAW_FRAME_WIDTH, SystemConfig.DRAW_FRAME_HEIGHT);
         internal void SyncDrawFrameToScreen()
         {
             framecounter += 1;

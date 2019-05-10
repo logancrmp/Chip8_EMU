@@ -1,9 +1,11 @@
 ﻿using System;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 
 namespace Chip8_EMU.Emulator
 {
@@ -15,20 +17,21 @@ namespace Chip8_EMU.Emulator
 
         protected override void OnRender(DrawingContext drawingContext)
         {
-            drawingContext.DrawImage(VideoFrame.bitmap, rectStruct);
+            drawingContext.DrawImage(bitmap, rectStruct);
         }
     }
 
     class Screen
     {
+        private MainWindow ParentWindow;
+        private Chip8 System;
+
         internal readonly static PixelFormat pixelFormat = PixelFormats.Rgb24;
         internal readonly static int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
 
         internal byte[] FrameBuffer;
         internal byte[][] EMU_FRAME; // array of arrays was roughly 7-8 percentage points lower cpu usage than 2d array
         internal object __EmuFrame_Lock = new object();
-
-        private MainWindow ParentWindow;
 
         private int ScreenTimerHandle = 0xFF;
 
@@ -47,9 +50,10 @@ namespace Chip8_EMU.Emulator
         private const int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
 
 
-        internal Screen(MainWindow ParentWindow)
+        internal Screen(Chip8 System, MainWindow ParentWindow)
         {
             this.ParentWindow = ParentWindow;
+            this.System = System;
 
             FrameBuffer = new byte[SystemConfig.DRAW_FRAME_HEIGHT * Stride];
             EMU_FRAME = new byte[SystemConfig.EMU_SCREEN_HEIGHT][];
@@ -66,8 +70,8 @@ namespace Chip8_EMU.Emulator
 
         internal void SetupClocks()
         {
-            ScreenTimerHandle = EmuRunner.C8_Clock.AddTimer(TriggerGraphicsPipeline);
-            EmuRunner.C8_Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
+            ScreenTimerHandle = System.Clock.AddTimer(TriggerGraphicsPipeline);
+            System.Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
         }
 
 
@@ -96,7 +100,7 @@ namespace Chip8_EMU.Emulator
                 {
                     if (SystemConfig.PERFORMANCE_LEVEL > 0)
                     {
-                        System.Threading.Thread.Sleep(SystemConfig.PERFORMANCE_LEVEL - 1);
+                        Thread.Sleep(SystemConfig.PERFORMANCE_LEVEL - 1);
                     }
                 }
             }
@@ -149,7 +153,7 @@ namespace Chip8_EMU.Emulator
 
             if (framecounter % 60 == 0)
             {
-                TimeNow = EmuRunner.C8_Clock.GetRealTimeNow();
+                TimeNow = System.Clock.GetRealTimeNow();
                 fps = (60 * (long)SystemConst.ONE_BILLION) / ((TimeNow - LastTime) + 1);
                 LastTime = TimeNow;
             }
@@ -163,7 +167,7 @@ namespace Chip8_EMU.Emulator
 
                     if (framecounter % 60 == 0)
                     {
-                        double CpuHz = EmuRunner.C8_CPU.IPS;
+                        double CpuHz = System.CPU.IPS;
                         var CpuStr = "";
                         if (CpuHz >= 1000000)
                         {
@@ -183,7 +187,7 @@ namespace Chip8_EMU.Emulator
 
                         ParentWindow.SetLogText("FPS : " + fps.ToString("N2") + "\nFREQ: " + CpuHz.ToString("N2") + " " + CpuStr);
                     }
-                }, System.Windows.Threading.DispatcherPriority.Render);
+                }, DispatcherPriority.Render);
             }
             catch { }
         }

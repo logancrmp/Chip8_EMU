@@ -10,26 +10,41 @@ namespace Chip8_EMU.Emulator
 {
     class CPU_Instructions
     {
+        private Chip8 System;
+
         // need to add to a speaker component!!!
-        internal static SoundPlayer simpleSound = new SoundPlayer("tone.wav");
+        internal SoundPlayer simpleSound = new SoundPlayer("tone.wav");
+
+        private int GET_PRESSED_KEY_CallCntr = 0;
+        private int GET_PRESSED_KEY_KeyState = 0;
+        private byte GET_PRESSED_KEY_PressedKey = 0xFF;
+
+        private ulong DRAW_SPRITE_AT_COORD_RefreshDeadline = 0;
+        private int DRAW_SPRITE_AT_COORD_DrawState = 0;
 
 
-        internal static byte Instruction_NOP(ushort Instruction)
+        internal CPU_Instructions(Chip8 System)
+        {
+            this.System = System;
+        }
+
+
+        internal byte Instruction_NOP(ushort Instruction)
         {
             // not implemented
             return 0;
         }
 
 
-        internal static byte Instruction_CLEAR_THE_SCREEN(ushort Instruction)
+        internal byte Instruction_CLEAR_THE_SCREEN(ushort Instruction)
         {
-            lock (EmuRunner.C8_Screen.__EmuFrame_Lock)
+            lock (System.Screen.__EmuFrame_Lock)
             {
                 for (int heightIter = 0; heightIter < SystemConfig.EMU_SCREEN_HEIGHT; heightIter += 1)
                 {
                     for (int widthIter = 0; widthIter < SystemConfig.EMU_SCREEN_WIDTH; widthIter += 1)
                     {
-                        EmuRunner.C8_Screen.EMU_FRAME[heightIter][widthIter] = 0x00;
+                        System.Screen.EMU_FRAME[heightIter][widthIter] = 0x00;
                     }
                 }
             }
@@ -39,26 +54,26 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_RETURN_FROM_SUBROUTINE(ushort Instruction)
+        internal byte Instruction_RETURN_FROM_SUBROUTINE(ushort Instruction)
         {
            // set default return address to a safe value
             ushort ReturnAddress = SystemConfig.HARDWARE_PC_INIT_ADDRESS;
 
             // dec stack ptr, get value from top of stack
-            bool Underflow = EmuRunner.C8_MMU.PopFromStack(ref ReturnAddress);
+            bool Underflow = System.MMU.PopFromStack(ref ReturnAddress);
 
             // if no underflow
             if (Underflow == false)
             {
                 // set PC to value from stack
-                EmuRunner.C8_CPU.Registers.PC = ReturnAddress;
+                System.CPU.Registers.PC = ReturnAddress;
 
                 // Set the jump flag to not increment the program counter after the instruction is complete
-                EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+                System.CPU.Registers.J_JumpFlag = 1;
             }
             else
             {
-                EmuRunner.C8_CPU.EnterTrap(TrapSourceEnum.StackUnderflow, Instruction);
+                System.CPU.EnterTrap(TrapSourceEnum.StackUnderflow, Instruction);
             }
 
             // 0 extra bytes used
@@ -66,45 +81,45 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_JUMP_TO_ADDRESS(ushort Instruction)
+        internal byte Instruction_JUMP_TO_ADDRESS(ushort Instruction)
         {
             // Mask out the opcode, get the address from the instruction
             ushort Address = (ushort)(Instruction & 0x0FFF);
 
             // Set the program counter to the jump location
-            EmuRunner.C8_CPU.Registers.PC = Address;
+            System.CPU.Registers.PC = Address;
 
             // Set the jump flag to not increment the program counter after the instruction is complete
-            EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+            System.CPU.Registers.J_JumpFlag = 1;
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_CALL_SUBROUTINE_AT_ADDRESS(ushort Instruction)
+        internal byte Instruction_CALL_SUBROUTINE_AT_ADDRESS(ushort Instruction)
         {
             // Mask out the opcode, get the address from the instruction
             ushort SubRoutineAddress = (ushort)(Instruction & 0x0FFF);
 
             // Set the return address to the next instruction
-            ushort ReturnAddress = (ushort)(EmuRunner.C8_CPU.Registers.PC + 2);
+            ushort ReturnAddress = (ushort)(System.CPU.Registers.PC + 2);
 
             // inc stack ptr
-            bool Underflow = EmuRunner.C8_MMU.PushToStack(ReturnAddress);
+            bool Underflow = System.MMU.PushToStack(ReturnAddress);
 
             if (Underflow == false)
             {
                 // Set the program counter to the jump location
-                EmuRunner.C8_CPU.Registers.PC = SubRoutineAddress;
+                System.CPU.Registers.PC = SubRoutineAddress;
 
                 // Set the jump flag to not increment the program counter after the instruction is complete
-                EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+                System.CPU.Registers.J_JumpFlag = 1;
 
             }
             else
             {
-                EmuRunner.C8_CPU.EnterTrap(TrapSourceEnum.StackOverflow, Instruction);
+                System.CPU.EnterTrap(TrapSourceEnum.StackOverflow, Instruction);
             }
 
             // 0 extra bytes used
@@ -112,18 +127,18 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SKIP_IF_VX_EQUALS_NN(ushort Instruction)
+        internal byte Instruction_SKIP_IF_VX_EQUALS_NN(ushort Instruction)
         {
             // mask out instruction values
             byte NN = (byte)(Instruction & 0xFF);
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // if equal
-            if (NN == EmuRunner.C8_CPU.Registers.GetVXRegValue(X))
+            if (NN == System.CPU.Registers.GetVXRegValue(X))
             {
                 // move program counter one instruction forward
                 // cpu will auto increment the program counter another instruction
-                EmuRunner.C8_CPU.Registers.PC += 2;
+                System.CPU.Registers.PC += 2;
             }
             else
             {
@@ -135,18 +150,18 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SKIP_IF_VX_NOT_EQUAL_NN(ushort Instruction)
+        internal byte Instruction_SKIP_IF_VX_NOT_EQUAL_NN(ushort Instruction)
         {
             // mask out instruction values
             byte NN = (byte)(Instruction & 0xFF);
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // if not equal
-            if (NN != EmuRunner.C8_CPU.Registers.GetVXRegValue(X))
+            if (NN != System.CPU.Registers.GetVXRegValue(X))
             {
                 // move program counter one instructions forward
                 // cpu will auto increment the program counter another instruction
-                EmuRunner.C8_CPU.Registers.PC += 2;
+                System.CPU.Registers.PC += 2;
             }
             else
             {
@@ -158,18 +173,18 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SKIP_IF_VX_EQUAL_VY(ushort Instruction)
+        internal byte Instruction_SKIP_IF_VX_EQUAL_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
             // if equal
-            if (EmuRunner.C8_CPU.Registers.GetVXRegValue(X) == EmuRunner.C8_CPU.Registers.GetVXRegValue(Y))
+            if (System.CPU.Registers.GetVXRegValue(X) == System.CPU.Registers.GetVXRegValue(Y))
             {
                 // move program counter one instructions forward
                 // cpu will auto increment the program counter another instruction
-                EmuRunner.C8_CPU.Registers.PC += 2;
+                System.CPU.Registers.PC += 2;
             }
             else
             {
@@ -181,28 +196,28 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SET_VX_TO_NN(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_NN(ushort Instruction)
         {
             // mask out instruction values
             byte NN = (byte)(Instruction & 0xFF);
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // set VX to NN
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, NN);
+            System.CPU.Registers.SetVXRegValue(X, NN);
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_ADD_NN_TO_VX(ushort Instruction)
+        internal byte Instruction_ADD_NN_TO_VX(ushort Instruction)
         {
             // mask out instruction values
             byte NN = (byte)(Instruction & 0xFF);
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // VX = VX + NN
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(EmuRunner.C8_CPU.Registers.GetVXRegValue(X) + NN));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(System.CPU.Registers.GetVXRegValue(X) + NN));
 
             // Carry flag is not changed in this instruction
 
@@ -211,167 +226,167 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VY(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, EmuRunner.C8_CPU.Registers.GetVXRegValue(Y));
+            System.CPU.Registers.SetVXRegValue(X, System.CPU.Registers.GetVXRegValue(Y));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VX_OR_VY(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VX_OR_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
-            byte VY = EmuRunner.C8_CPU.Registers.GetVXRegValue(Y);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
+            byte VY = System.CPU.Registers.GetVXRegValue(Y);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VX | VY));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VX | VY));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VX_AND_VY(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VX_AND_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
-            byte VY = EmuRunner.C8_CPU.Registers.GetVXRegValue(Y);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
+            byte VY = System.CPU.Registers.GetVXRegValue(Y);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VX & VY));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VX & VY));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VX_XOR_VY(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VX_XOR_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
-            byte VY = EmuRunner.C8_CPU.Registers.GetVXRegValue(Y);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
+            byte VY = System.CPU.Registers.GetVXRegValue(Y);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VX ^ VY));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VX ^ VY));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VX_PLUS_VY(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VX_PLUS_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
-            ushort VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
-            ushort VY = EmuRunner.C8_CPU.Registers.GetVXRegValue(Y);
+            ushort VX = System.CPU.Registers.GetVXRegValue(X);
+            ushort VY = System.CPU.Registers.GetVXRegValue(Y);
 
             ushort VXY = (ushort)(VX + VY);
 
-            EmuRunner.C8_CPU.Registers.VF = (byte)((VXY > 0xFF) ? 1 : 0);
+            System.CPU.Registers.VF = (byte)((VXY > 0xFF) ? 1 : 0);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VXY & 0xFF));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VXY & 0xFF));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VX_MINUS_VY(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VX_MINUS_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
-            byte VY = EmuRunner.C8_CPU.Registers.GetVXRegValue(Y);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
+            byte VY = System.CPU.Registers.GetVXRegValue(Y);
 
-            EmuRunner.C8_CPU.Registers.VF = (byte)((VX > VY) ? 1 : 0);
+            System.CPU.Registers.VF = (byte)((VX > VY) ? 1 : 0);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VX - VY));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VX - VY));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VX_RSHIFT_1(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VX_RSHIFT_1(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
 
-            EmuRunner.C8_CPU.Registers.VF = (byte)(VX & 0x1);
+            System.CPU.Registers.VF = (byte)(VX & 0x1);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VX >> 1));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VX >> 1));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VY_MINUS_VX(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VY_MINUS_VX(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
-            byte VY = EmuRunner.C8_CPU.Registers.GetVXRegValue(Y);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
+            byte VY = System.CPU.Registers.GetVXRegValue(Y);
 
-            EmuRunner.C8_CPU.Registers.VF = (byte)((VY > VX) ? 1 : 0);
+            System.CPU.Registers.VF = (byte)((VY > VX) ? 1 : 0);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VY - VX));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VY - VX));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SET_VX_TO_VX_LSHIFT_1(ushort Instruction)
+        internal byte Instruction_SET_VX_TO_VX_LSHIFT_1(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
 
-            EmuRunner.C8_CPU.Registers.VF = (byte)(((VX & 0x80) > 0) ? 1 : 0);
+            System.CPU.Registers.VF = (byte)(((VX & 0x80) > 0) ? 1 : 0);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(VX << 1));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(VX << 1));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_SKIP_IF_VX_NOT_EQUAL_VY(ushort Instruction)
+        internal byte Instruction_SKIP_IF_VX_NOT_EQUAL_VY(ushort Instruction)
         {
             // mask out instruction values
             byte X = (byte)((Instruction & 0x0F00) >> 8);
             byte Y = (byte)((Instruction & 0x00F0) >> 4);
 
             // if not equal
-            if (EmuRunner.C8_CPU.Registers.GetVXRegValue(X) != EmuRunner.C8_CPU.Registers.GetVXRegValue(Y))
+            if (System.CPU.Registers.GetVXRegValue(X) != System.CPU.Registers.GetVXRegValue(Y))
             {
                 // move program counter one instructions forward
                 // cpu will auto increment the program counter another instruction
-                EmuRunner.C8_CPU.Registers.PC += 2;
+                System.CPU.Registers.PC += 2;
             }
             else
             {
@@ -383,74 +398,72 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SET_I_TO_ADDRESS(ushort Instruction)
+        internal byte Instruction_SET_I_TO_ADDRESS(ushort Instruction)
         {
             // Mask out the opcode, get the address from the instruction
             ushort Address = (ushort)(Instruction & 0x0FFF);
 
-            EmuRunner.C8_CPU.Registers.I = Address;
+            System.CPU.Registers.I = Address;
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_JUMP_TO_ADDRESS_PLUS_V0(ushort Instruction)
+        internal byte Instruction_JUMP_TO_ADDRESS_PLUS_V0(ushort Instruction)
         {
             // Mask out the opcode, get the address from the instruction
             ushort Address = (ushort)(Instruction & 0x0FFF);
 
             // Get value of V0
-            byte V0 = EmuRunner.C8_CPU.Registers.GetVXRegValue(0);
+            byte V0 = System.CPU.Registers.GetVXRegValue(0);
 
             // Set the program counter to the jump location
-            EmuRunner.C8_CPU.Registers.PC = (ushort)(Address + V0);
+            System.CPU.Registers.PC = (ushort)(Address + V0);
 
             // Set the jump flag to not increment the program counter after the instruction is complete
-            EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+            System.CPU.Registers.J_JumpFlag = 1;
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_VX_TO_RAND_AND_NN(ushort Instruction)
+        internal byte Instruction_VX_TO_RAND_AND_NN(ushort Instruction)
         {
             // mask out instruction values
             byte NN = (byte)(Instruction & 0xFF);
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, (byte)(EmuRunner.C8_CPU.GetRandByte() & NN));
+            System.CPU.Registers.SetVXRegValue(X, (byte)(System.CPU.GetRandByte() & NN));
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        private static ulong RefreshDeadline = 0;
-        private static int DrawSpriteInstructionState = 0;
-        internal static byte Instruction_DRAW_SPRITE_AT_COORD(ushort Instruction)
+        internal byte Instruction_DRAW_SPRITE_AT_COORD(ushort Instruction)
         {
-            if (DrawSpriteInstructionState == 0)
+            if (DRAW_SPRITE_AT_COORD_DrawState == 0)
             {
                 // block until 60Hz refresh
-                RefreshDeadline = EmuRunner.C8_Clock.GetNextRealtimeDeadline(EmuRunner.C8_CPU.SyncTimerHandler);
-                DrawSpriteInstructionState = 1;
-                EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+                DRAW_SPRITE_AT_COORD_RefreshDeadline = System.Clock.GetNextRealtimeDeadline(System.CPU.SyncTimerHandler);
+                DRAW_SPRITE_AT_COORD_DrawState = 1;
+                System.CPU.Registers.J_JumpFlag = 1;
             }
             else
-            if (DrawSpriteInstructionState == 1)
+            if (DRAW_SPRITE_AT_COORD_DrawState == 1)
             {
-                if (EmuRunner.C8_Clock.GetTimeNow() >= RefreshDeadline)
+                if (System.Clock.GetTimeNow() >= DRAW_SPRITE_AT_COORD_RefreshDeadline)
                 {
-                    DrawSpriteInstructionState = 2;
+                    DRAW_SPRITE_AT_COORD_DrawState = 2;
                 }
 
-                EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+                System.CPU.Registers.J_JumpFlag = 1;
             }
             else
             {
-                DrawSpriteInstructionState = 0;
+                DRAW_SPRITE_AT_COORD_DrawState = 0;
 
                 // mask out instruction values
                 byte X = (byte)((Instruction & 0x0F00) >> 8);
@@ -458,8 +471,8 @@ namespace Chip8_EMU.Emulator
                 byte N = (byte)(Instruction & 0x000F);
 
                 // 0,0 is top left of screen. vx and vy are offsets from 0,0
-                byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
-                byte VY = EmuRunner.C8_CPU.Registers.GetVXRegValue(Y);
+                byte VX = System.CPU.Registers.GetVXRegValue(X);
+                byte VY = System.CPU.Registers.GetVXRegValue(Y);
 
                 // mask values per documentation at http://chip8.sourceforge.net/chip8-1.1.pdf
                 VX &= 0x3F;
@@ -470,12 +483,12 @@ namespace Chip8_EMU.Emulator
                 int SpriteWidth = 8;
                 byte[] SpriteBits; // is of length SpriteHeight * SpriteWidth
 
-                EmuRunner.C8_MMU.MemCpyToPtr(EmuRunner.C8_CPU.Registers.I, out SpriteBits, (ushort)(SpriteHeight * SpriteWidth));
+                System.MMU.MemCpyToPtr(System.CPU.Registers.I, out SpriteBits, (ushort)(SpriteHeight * SpriteWidth));
 
                 bool PixelErased = false;
                 bool BitSet = false;
 
-                lock (EmuRunner.C8_Screen.__EmuFrame_Lock)
+                lock (System.Screen.__EmuFrame_Lock)
                 {
                     // loop over all bits int SpriteBits
                     for (int ByteIter = 0; ByteIter < SpriteHeight; ByteIter += 1)
@@ -501,17 +514,17 @@ namespace Chip8_EMU.Emulator
 
                             byte NewPixelValue = (byte)(BitSet ? 0xFF : 0x00);
 
-                            if ((EmuRunner.C8_Screen.EMU_FRAME[VY + ByteIter][VX + BitIter] & NewPixelValue) > 0)
+                            if ((System.Screen.EMU_FRAME[VY + ByteIter][VX + BitIter] & NewPixelValue) > 0)
                             {
                                 PixelErased = true;
                             }
 
-                            EmuRunner.C8_Screen.EMU_FRAME[VY + ByteIter][VX + BitIter] ^= NewPixelValue;
+                            System.Screen.EMU_FRAME[VY + ByteIter][VX + BitIter] ^= NewPixelValue;
                         }
                     }
                 }
 
-                EmuRunner.C8_CPU.Registers.VF = (byte)((PixelErased == true) ? 1 : 0);
+                System.CPU.Registers.VF = (byte)((PixelErased == true) ? 1 : 0);
             }
 
             // 0 extra bytes used
@@ -519,20 +532,20 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SKIP_IF_KEY_PRESSED(ushort Instruction)
+        internal byte Instruction_SKIP_IF_KEY_PRESSED(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // Get the key value from the lower 4 bits of the VX register
-            byte Key = (byte) (EmuRunner.C8_CPU.Registers.GetVXRegValue(X) & 0x0F);
+            byte Key = (byte) (System.CPU.Registers.GetVXRegValue(X) & 0x0F);
 
             // check if key was reported as pressed
-            if (EmuRunner.C8_Keyboard.IsKeyPressed(Key) == true)
+            if (System.Keyboard.IsKeyPressed(Key) == true)
             {
                 // move program counter one instructions forward
                 // cpu will auto increment the program counter another instruction
-                EmuRunner.C8_CPU.Registers.PC += 2;
+                System.CPU.Registers.PC += 2;
             }
             else
             {
@@ -544,20 +557,20 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SKIP_IF_KEY_NOT_PRESSED(ushort Instruction)
+        internal byte Instruction_SKIP_IF_KEY_NOT_PRESSED(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // Get the key value from the lower 4 bits of the VX register
-            byte Key = (byte)(EmuRunner.C8_CPU.Registers.GetVXRegValue(X) & 0x0F);
+            byte Key = (byte)(System.CPU.Registers.GetVXRegValue(X) & 0x0F);
 
             // check if key was reported as not pressed
-            if (EmuRunner.C8_Keyboard.IsKeyPressed(Key) == false)
+            if (System.Keyboard.IsKeyPressed(Key) == false)
             {
                 // move program counter one instructions forward
                 // cpu will auto increment the program counter another instruction
-                EmuRunner.C8_CPU.Registers.PC += 2;
+                System.CPU.Registers.PC += 2;
             }
             else
             {
@@ -569,78 +582,76 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_GET_DELAY_TIMER(ushort Instruction)
+        internal byte Instruction_GET_DELAY_TIMER(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // Set VX to the value of the delay timer
-            EmuRunner.C8_CPU.Registers.SetVXRegValue(X, EmuRunner.C8_CPU.Registers.DelayTimer);
+            System.CPU.Registers.SetVXRegValue(X, System.CPU.Registers.DelayTimer);
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        static int CallCntr = 0;
-        static int pressedkeyfncstate = 0;
-        static byte PressedKey = 0xFF;
-        internal static byte Instruction_GET_PRESSED_KEY(ushort Instruction)
-        {
-            if (pressedkeyfncstate == 0)
-            {
-                CallCntr++;
 
-                if (CallCntr == (SystemConfig.CPU_FREQ / 100))
+        internal byte Instruction_GET_PRESSED_KEY(ushort Instruction)
+        {
+            if (GET_PRESSED_KEY_KeyState == 0)
+            {
+                GET_PRESSED_KEY_CallCntr++;
+
+                if (GET_PRESSED_KEY_CallCntr == (SystemConfig.CPU_FREQ / 100))
                 {
-                    CallCntr = 0;
+                    GET_PRESSED_KEY_CallCntr = 0;
 
                     for (byte Key = 0; Key < 0x10; Key += 1)
                     {
                         // check if key was reported as pressed
-                        if (EmuRunner.C8_Keyboard.IsKeyPressed(Key) == true)
+                        if (System.Keyboard.IsKeyPressed(Key) == true)
                         {
                             // need to add a speaker and interface for arbitrating start and stop across users
                             simpleSound.PlayLooping();
 
-                            PressedKey = Key;
+                            GET_PRESSED_KEY_PressedKey = Key;
 
-                            pressedkeyfncstate = 1;
+                            GET_PRESSED_KEY_KeyState = 1;
                         }
                     }
                 }
 
                 // block the program counter from incrementing and run this instruction again!
-                EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+                System.CPU.Registers.J_JumpFlag = 1;
             }
             else
-            if (pressedkeyfncstate == 1)
+            if (GET_PRESSED_KEY_KeyState == 1)
             {
-                CallCntr++;
+                GET_PRESSED_KEY_CallCntr++;
 
-                if (CallCntr == (SystemConfig.CPU_FREQ / 100))
+                if (GET_PRESSED_KEY_CallCntr == (SystemConfig.CPU_FREQ / 100))
                 {
-                    CallCntr = 0;
+                    GET_PRESSED_KEY_CallCntr = 0;
 
                     // check if key was reported as not pressed
-                    if (EmuRunner.C8_Keyboard.IsKeyPressed(PressedKey) == false)
+                    if (System.Keyboard.IsKeyPressed(GET_PRESSED_KEY_PressedKey) == false)
                     {
                         // need to add a speaker and interface for arbitrating start and stop across users
                         simpleSound.Stop();
 
-                        pressedkeyfncstate = 0;
-                        CallCntr = 0;
+                        GET_PRESSED_KEY_KeyState = 0;
+                        GET_PRESSED_KEY_CallCntr = 0;
                     }
                     else
                     {
                         // key is still pressed, block the program counter from incrementing and run this instruction again!
-                        EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+                        System.CPU.Registers.J_JumpFlag = 1;
                     }
                 }
                 else
                 {
                     // key is still pressed, block the program counter from incrementing and run this instruction again!
-                    EmuRunner.C8_CPU.Registers.J_JumpFlag = 1;
+                    System.CPU.Registers.J_JumpFlag = 1;
                 }
             }
 
@@ -649,20 +660,22 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SET_DELAY_TIMER(ushort Instruction)
+        internal byte Instruction_SET_DELAY_TIMER(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
-            EmuRunner.C8_CPU.Registers.DelayTimer = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
+            System.CPU.Registers.DelayTimer = System.CPU.Registers.GetVXRegValue(X);
 
-            if (EmuRunner.C8_CPU.Registers.DelayTimer > 0)
+            if (System.CPU.Registers.DelayTimer > 0)
             {
-                EmuRunner.C8_Clock.StartTimerCyclic(EmuRunner.C8_CPU.DelayTimerHandle, SystemConst.SIXTY_HZ_TICK_NS, false);
+                System.Clock.StartTimerCyclic(System.CPU.DelayTimerHandle, SystemConst.SIXTY_HZ_TICK_NS, false);
             }
             else
             {
-                EmuRunner.C8_Clock.StopTimer(EmuRunner.C8_CPU.DelayTimerHandle);
+                // Set delay timer to one and call the callback
+                System.CPU.Registers.DelayTimer = 1;
+                System.CPU.DelayTimerCallback();
             }
 
             // 0 extra bytes used
@@ -670,86 +683,85 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_SET_SOUND_TIMER(ushort Instruction)
+        internal byte Instruction_SET_SOUND_TIMER(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
-            EmuRunner.C8_CPU.Registers.SoundTimer = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
+            System.CPU.Registers.SoundTimer = System.CPU.Registers.GetVXRegValue(X);
 
-            if (EmuRunner.C8_CPU.Registers.SoundTimer > 0)
+            if (System.CPU.Registers.SoundTimer > 0)
             {
-                EmuRunner.C8_Clock.StartTimerCyclic(EmuRunner.C8_CPU.SoundTimerHandle, SystemConst.SIXTY_HZ_TICK_NS, false);
+                System.Clock.StartTimerCyclic(System.CPU.SoundTimerHandle, SystemConst.SIXTY_HZ_TICK_NS, false);
 
                 // need to add a speaker and interface for arbitrating start and stop across users
                 simpleSound.PlayLooping();
             }
             else
             {
-                EmuRunner.C8_Clock.StopTimer(EmuRunner.C8_CPU.SoundTimerHandle);
-
-                // need to add a speaker and interface for arbitrating start and stop across users
-                simpleSound.Stop();
+                // Set sound timer to one and call the callback
+                System.CPU.Registers.SoundTimer = 1;
+                System.CPU.SoundTimerCallback();
             }
 
             // 0 extra bytes used
             return 0;
         }
 
-        internal static byte Instruction_ADD_VX_TO_I(ushort Instruction)
+        internal byte Instruction_ADD_VX_TO_I(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             // If arithmatic overflow set VF, else clear
-            if (((uint)X + (uint)EmuRunner.C8_CPU.Registers.I) > 0xFFF)
+            if (((uint)X + (uint)System.CPU.Registers.I) > 0xFFF)
             {
-                EmuRunner.C8_CPU.Registers.VF = 1;
+                System.CPU.Registers.VF = 1;
             }
             else
             {
-                EmuRunner.C8_CPU.Registers.VF = 1;
+                System.CPU.Registers.VF = 1;
             }
 
             // Add value of VX to I
-            EmuRunner.C8_CPU.Registers.I += EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
+            System.CPU.Registers.I += System.CPU.Registers.GetVXRegValue(X);
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_STORE_BINARY_CODED_DECIMAL(ushort Instruction)
+        internal byte Instruction_STORE_BINARY_CODED_DECIMAL(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
-            byte VX = EmuRunner.C8_CPU.Registers.GetVXRegValue(X);
+            byte VX = System.CPU.Registers.GetVXRegValue(X);
             byte[] StoreByte = new byte[1];
 
             StoreByte[0] = (byte)((VX - (VX % 100)) / 100);
-            EmuRunner.C8_MMU.MemCpyFromPtr(StoreByte, EmuRunner.C8_CPU.Registers.I, 1);
+            System.MMU.MemCpyFromPtr(StoreByte, System.CPU.Registers.I, 1);
             VX -= (byte)(StoreByte[0] * 100);
 
             StoreByte[0] = (byte)((VX - (VX % 10)) / 10);
-            EmuRunner.C8_MMU.MemCpyFromPtr(StoreByte, (ushort)(EmuRunner.C8_CPU.Registers.I + 1), 1);
+            System.MMU.MemCpyFromPtr(StoreByte, (ushort)(System.CPU.Registers.I + 1), 1);
             VX -= (byte)(StoreByte[0] * 10);
 
             StoreByte[0] = VX;
-            EmuRunner.C8_MMU.MemCpyFromPtr(StoreByte, (ushort)(EmuRunner.C8_CPU.Registers.I + 2), 1);
+            System.MMU.MemCpyFromPtr(StoreByte, (ushort)(System.CPU.Registers.I + 2), 1);
 
             // 0 extra bytes used
             return 0;
         }
 
 
-        internal static byte Instruction_STORE_REGISTERS(ushort Instruction)
+        internal byte Instruction_STORE_REGISTERS(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
 
             for (byte RegIter = 0; RegIter <= X; RegIter += 1)
             {
-                EmuRunner.C8_MMU.MemCpyFromPtr(new byte[] { EmuRunner.C8_CPU.Registers.GetVXRegValue(RegIter) }, (ushort)(EmuRunner.C8_CPU.Registers.I + RegIter), 1);
+                System.MMU.MemCpyFromPtr(new byte[] { System.CPU.Registers.GetVXRegValue(RegIter) }, (ushort)(System.CPU.Registers.I + RegIter), 1);
             }
 
             // 0 extra bytes used
@@ -757,7 +769,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal static byte Instruction_LOAD_REGISTERS(ushort Instruction)
+        internal byte Instruction_LOAD_REGISTERS(ushort Instruction)
         {
             // parse instruction
             byte X = (byte)((Instruction & 0x0F00) >> 8);
@@ -765,9 +777,9 @@ namespace Chip8_EMU.Emulator
             byte[] OutByte = new byte[1];
             for (byte RegIter = 0; RegIter <= X; RegIter += 1)
             {
-                EmuRunner.C8_MMU.MemCpyToPtr((ushort)(EmuRunner.C8_CPU.Registers.I + RegIter), out OutByte, 1);
+                System.MMU.MemCpyToPtr((ushort)(System.CPU.Registers.I + RegIter), out OutByte, 1);
 
-                EmuRunner.C8_CPU.Registers.SetVXRegValue(RegIter, OutByte[0]);
+                System.CPU.Registers.SetVXRegValue(RegIter, OutByte[0]);
             }
 
             // 0 extra bytes used

@@ -231,6 +231,9 @@ namespace Chip8_EMU.Emulator
 
         internal void StartTimer()
         {
+            NextDeadline = ParentClock.GetRealTimeNow() + TimeoutValue;
+            DeadlineHandled = false;
+
             TimerActive = true;
         }
 

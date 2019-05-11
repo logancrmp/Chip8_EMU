@@ -5,9 +5,15 @@ namespace Chip8_EMU.Emulator
 {
     enum TimerTypeEnum
     {
-        TimerInvalid,
         TimerOneShot,   // Count down to 0, trigger callback, halt
         TimerCyclic,    // Count down to 0, trigger callback, set timer for next period
+    };
+
+    enum ClockStateEnum
+    {
+        ClockNotStarted,
+        ClockRunning,
+        ClockPaused,
     };
 
 
@@ -23,10 +29,12 @@ namespace Chip8_EMU.Emulator
 
         private ulong ClockTime = 0;
 
+        ClockStateEnum ClockState = ClockStateEnum.ClockNotStarted;
+
 
         internal int AddTimer(TimerFncPtrType TimerNotification)
         {
-            Timer NewTimer = new Timer();
+            Timer NewTimer = new Timer(this);
 
             NewTimer.TimerNotification = TimerNotification;
             NewTimer.TimerActive = false;
@@ -38,116 +46,80 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal void StartTimerOneShot(int TimerHandle, ulong TimeoutNanoSeconds)
+        internal Timer GetTimer(int TimerHandle)
         {
             if (Timers.ContainsKey(TimerHandle))
             {
-                Timers[TimerHandle].TimerType = TimerTypeEnum.TimerOneShot;
-                Timers[TimerHandle].SkipMissedDeadlines = false;
-                Timers[TimerHandle].TimeoutValue = 0;
-                Timers[TimerHandle].TimerActive = true;
+                return Timers[TimerHandle];
+            }
 
-                Timers[TimerHandle].NextDeadline = GetRealTimeNow() + TimeoutNanoSeconds;
-                Timers[TimerHandle].DeadlineHandled = false;
+            return null;
+        }
+
+        
+        void PauseClock()
+        {
+            if (ClockState == ClockStateEnum.ClockRunning)
+            {
+                ClockState = ClockStateEnum.ClockPaused;
+
+                foreach (var timer in Timers.Values)
+                {
+                    timer.TimerActiveResumeState = timer.TimerActive;
+                    timer.TimerActive = false;
+                }
             }
         }
 
 
-        internal void StartTimerCyclic(int TimerHandle, ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
+        void ResumeClock()
         {
-            if (Timers.ContainsKey(TimerHandle))
+            if (ClockState == ClockStateEnum.ClockPaused)
             {
-                Timers[TimerHandle].TimerType = TimerTypeEnum.TimerCyclic;
-                Timers[TimerHandle].SkipMissedDeadlines = SkipMissedDeadlines;
-                Timers[TimerHandle].TimeoutValue = TimeoutNanoSeconds;
-                Timers[TimerHandle].TimerActive = true;
+                ClockState = ClockStateEnum.ClockRunning;
 
-                Timers[TimerHandle].NextDeadline = GetRealTimeNow() + TimeoutNanoSeconds;
-                Timers[TimerHandle].DeadlineHandled = false;
+                ClockTime = GetRealTimeNow();
+
+                foreach (var timer in Timers.Values)
+                {
+                    if (timer.TimerActiveResumeState == true)
+                    {
+                        timer.NextDeadline = timer.GetNextRealtimeDeadline();
+                        timer.DeadlineHandled = false;
+                        timer.TimerActiveResumeState = false;
+                        timer.TimerActive = true;
+                    }
+                }
             }
         }
 
-
-        internal ulong GetNextRealtimeDeadline(int TimerHandle)
-        {
-            ulong Deadline = 0;
-
-            if (Timers.ContainsKey(TimerHandle))
-            {
-                // find the next deadline for the timer that is greater than the current clock time
-                var Offset = ClockTime - Timers[TimerHandle].NextDeadline;
-
-                Deadline = ClockTime + (Timers[TimerHandle].TimeoutValue - (Offset % Timers[TimerHandle].TimeoutValue));
-            }
-
-            return Deadline;
-        }
-
-
-        internal void StartTimer(int TimerHandle)
-        {
-            if (Timers.ContainsKey(TimerHandle))
-            {
-                Timers[TimerHandle].TimerActive = true;
-            }
-        }
-
-
-        internal void StopTimer(int TimerHandle)
-        {
-            if (Timers.ContainsKey(TimerHandle))
-            {
-                Timers[TimerHandle].TimerActive = false;
-            }
-        }
-
-        /*
-            Need to add a pause that pauses all timers in the system.
-            The timers should be able to be unpaused, and upon resuming,
-            should pick up where they left off. If a timer was 75% of the
-            way to its timeout, when resumed it should be loaded with 25%
-            of its timeout value
-
-            
-            void pause()
-            {
-                // save real time
-
-                // loop over timers
-
-                    // save previous active state
-                    // set to inactive
-                    // save offset from saved real time
-            }
-
-            void resume()
-            {
-                // set clock time to real time
-
-                // loop over timers
-
-                    // restore previous active state
-                    // set timeout value = clock time - saved offset
-            }
-        */
 
         internal void RunClock()
         {
             int TimerExecCntr = 0;
 
+            ClockState = ClockStateEnum.ClockRunning;
             ClockSource.Start();
+
+            ulong StartTime = GetRealTimeNow();
 
             foreach (var timer in Timers.Values)
             {
-                timer.NextDeadline = GetRealTimeNow() + timer.TimeoutValue;
+                timer.NextDeadline = StartTime + timer.TimeoutValue;
                 timer.DeadlineHandled = false;
             }
 
             while (true)
             {
+                // Sleep and wait until the clock is resumed
+                while (ClockState == ClockStateEnum.ClockPaused)
+                {
+                    System.Threading.Thread.Sleep(1);
+                }
+
                 // set ClockTime to the number of nanoseconds since time 0
                 ClockTime = GetRealTimeNow();
-
+                
                 foreach (var timer in Timers.Values)
                 {
                     if (timer.TimerActive == false)
@@ -171,7 +143,7 @@ namespace Chip8_EMU.Emulator
                         {
                             if (timer.SkipMissedDeadlines)
                             {
-                                timer.NextDeadline = GetNextRealtimeDeadline(timer.TimerHandle);
+                                timer.NextDeadline = timer.GetNextRealtimeDeadline();
                             }
                             else
                             {
@@ -215,10 +187,13 @@ namespace Chip8_EMU.Emulator
 
     class Timer
     {
+        private Clock ParentClock;
+
         internal TimerTypeEnum TimerType;
         internal int TimerHandle;
 
         internal bool TimerActive;
+        internal bool TimerActiveResumeState;
 
         // next deadline in absolute nanoseconds from time 0
         internal ulong NextDeadline;
@@ -227,9 +202,57 @@ namespace Chip8_EMU.Emulator
         // deadline time in nanoseconds from when the timer is started
         internal ulong TimeoutValue;
 
-        // 
         internal bool SkipMissedDeadlines;
 
         internal TimerFncPtrType TimerNotification;
+
+
+        internal Timer(Clock ParentClock)
+        {
+            this.ParentClock = ParentClock;
+        }
+
+
+        internal void SetTimerOneShot(ulong TimeoutNanoSeconds)
+        {
+            TimerType = TimerTypeEnum.TimerOneShot;
+            SkipMissedDeadlines = false;
+            TimeoutValue = TimeoutNanoSeconds;
+        }
+
+
+        internal void SetTimerCyclic(ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
+        {
+            TimerType = TimerTypeEnum.TimerCyclic;
+            this.SkipMissedDeadlines = SkipMissedDeadlines;
+            TimeoutValue = TimeoutNanoSeconds;
+        }
+
+
+        internal void StartTimer()
+        {
+            TimerActive = true;
+        }
+
+
+        internal void StopTimer()
+        {
+            TimerActive = false;
+        }
+
+
+        internal ulong GetNextRealtimeDeadline()
+        {
+            ulong Deadline = 0;
+
+            ulong TimeNow = ParentClock.GetRealTimeNow();
+
+            // find the next deadline for the timer that is greater than the current clock time
+            var Offset = TimeNow - NextDeadline;
+
+            Deadline = TimeNow + (TimeoutValue - (Offset % TimeoutValue));
+
+            return Deadline;
+        }
     }
 }

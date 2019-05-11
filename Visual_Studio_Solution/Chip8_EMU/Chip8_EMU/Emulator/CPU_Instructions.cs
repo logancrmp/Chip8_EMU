@@ -447,7 +447,7 @@ namespace Chip8_EMU.Emulator
             if (DRAW_SPRITE_AT_COORD_DrawState == 0)
             {
                 // block until 60Hz refresh
-                DRAW_SPRITE_AT_COORD_RefreshDeadline = System.Clock.GetNextRealtimeDeadline(System.CPU.SyncTimerHandler);
+                DRAW_SPRITE_AT_COORD_RefreshDeadline = System.Clock.GetTimer(System.CPU.SyncTimerHandler).GetNextRealtimeDeadline();
                 DRAW_SPRITE_AT_COORD_DrawState = 1;
                 System.CPU.Registers.J_JumpFlag = 1;
             }
@@ -669,7 +669,8 @@ namespace Chip8_EMU.Emulator
 
             if (System.CPU.Registers.DelayTimer > 0)
             {
-                System.Clock.StartTimerCyclic(System.CPU.DelayTimerHandle, SystemConst.SIXTY_HZ_TICK_NS, false);
+                System.Clock.GetTimer(System.CPU.DelayTimerHandle).SetTimerCyclic(SystemConst.SIXTY_HZ_TICK_NS, false);
+                System.Clock.GetTimer(System.CPU.DelayTimerHandle).StartTimer();
             }
             else
             {
@@ -692,7 +693,8 @@ namespace Chip8_EMU.Emulator
 
             if (System.CPU.Registers.SoundTimer > 0)
             {
-                System.Clock.StartTimerCyclic(System.CPU.SoundTimerHandle, SystemConst.SIXTY_HZ_TICK_NS, false);
+                System.Clock.GetTimer(System.CPU.SoundTimerHandle).SetTimerCyclic(SystemConst.SIXTY_HZ_TICK_NS, false);
+                System.Clock.GetTimer(System.CPU.SoundTimerHandle).StartTimer();
 
                 // need to add a speaker and interface for arbitrating start and stop across users
                 simpleSound.PlayLooping();

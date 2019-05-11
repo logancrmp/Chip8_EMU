@@ -71,7 +71,8 @@ namespace Chip8_EMU.Emulator
         internal void SetupClocks()
         {
             ScreenTimerHandle = System.Clock.AddTimer(TriggerGraphicsPipeline);
-            System.Clock.StartTimerCyclic(ScreenTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
+            System.Clock.GetTimer(ScreenTimerHandle).SetTimerCyclic((SystemConst.ONE_BILLION / SystemConfig.FRAME_RATE), true);
+            System.Clock.GetTimer(ScreenTimerHandle).StartTimer();
         }
 
 

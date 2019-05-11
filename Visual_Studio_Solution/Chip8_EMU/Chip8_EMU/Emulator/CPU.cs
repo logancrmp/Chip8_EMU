@@ -60,13 +60,15 @@ namespace Chip8_EMU.Emulator
             DelayTimerHandle = System.Clock.AddTimer(DelayTimerCallback);
             SoundTimerHandle = System.Clock.AddTimer(SoundTimerCallback);
 
-            // Setup timer for core clock
+            // Setup timer for core clock, and set it to active when the clock starts
             CoreTimerHandle = System.Clock.AddTimer(ExecCycle);
-            System.Clock.StartTimerCyclic(CoreTimerHandle, (SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
+            System.Clock.GetTimer(CoreTimerHandle).SetTimerCyclic((SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
+            System.Clock.GetTimer(CoreTimerHandle).StartTimer();
 
             // Setup timer for 60 Hz instruction sync
             SyncTimerHandler = System.Clock.AddTimer(null);
-            System.Clock.StartTimerCyclic(SyncTimerHandler, (SystemConst.ONE_BILLION / 60), true);
+            System.Clock.GetTimer(SyncTimerHandler).SetTimerCyclic((SystemConst.ONE_BILLION / 60), true);
+            System.Clock.GetTimer(SyncTimerHandler).StartTimer();
         }
 
 
@@ -174,7 +176,7 @@ namespace Chip8_EMU.Emulator
                 // if transitioning from non-zero to zero
                 if (Registers.DelayTimer == 0)
                 {
-                    System.Clock.StopTimer(DelayTimerHandle);
+                    System.Clock.GetTimer(DelayTimerHandle).StopTimer();
                 }
             }
         }
@@ -191,7 +193,7 @@ namespace Chip8_EMU.Emulator
                 {
                     // need to add a speaker and interface for arbitrating start and stop across users
                     Instructions.simpleSound.Stop();
-                    System.Clock.StopTimer(SoundTimerHandle);
+                    System.Clock.GetTimer(SoundTimerHandle).StopTimer();
                 }
             }
         }

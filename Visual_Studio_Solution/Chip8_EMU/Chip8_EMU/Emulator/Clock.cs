@@ -84,6 +84,9 @@ namespace Chip8_EMU.Emulator
                 {
                     if (timer.TimerActiveResumeState == true)
                     {
+                        // this doesn't take into account the portion of the timer that expired
+                        // before the system was paused. Need to add this to the calculation to
+                        // get it to be exact!!!
                         timer.NextDeadline = timer.GetNextRealtimeDeadline();
                         timer.DeadlineHandled = false;
                         timer.TimerActiveResumeState = false;
@@ -114,7 +117,7 @@ namespace Chip8_EMU.Emulator
                 // Sleep and wait until the clock is resumed
                 while (ClockState == ClockStateEnum.ClockPaused)
                 {
-                    System.Threading.Thread.Sleep(0);
+                    System.Threading.Thread.Sleep(1);
                 }
 
                 // set ClockTime to the number of nanoseconds since time 0
@@ -130,8 +133,8 @@ namespace Chip8_EMU.Emulator
                     TimerExecCntr = 0;
 
                     // timer will execute as many deadlines as possible until either the timer
-                    // has caught up with real time, or at most 1ms of cpu time has been emulated
-                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ / 1000))
+                    // has caught up with real time, or at most 10ms of cpu time has been emulated
+                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ / 100))
                     {
                         TimerExecCntr++;
                         timer.DeadlineHandled = true;
@@ -143,7 +146,14 @@ namespace Chip8_EMU.Emulator
                         {
                             if (timer.SkipMissedDeadlines)
                             {
-                                timer.NextDeadline = timer.GetNextRealtimeDeadline();
+                                if ((timer.NextDeadline + timer.TimeoutValue) >= ClockTime)
+                                {
+                                    timer.NextDeadline += timer.TimeoutValue;
+                                }
+                                else
+                                {
+                                    timer.NextDeadline = timer.GetNextRealtimeDeadline();
+                                }
                             }
                             else
                             {

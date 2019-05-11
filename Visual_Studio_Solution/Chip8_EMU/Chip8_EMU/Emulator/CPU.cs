@@ -76,10 +76,11 @@ namespace Chip8_EMU.Emulator
         {
             InstructionCounter += 1;
 
-            if (InstructionCounter == SystemConfig.CPU_FREQ)
+            // need a better way to not totally bork this calculation after resuming the clock
+            if (InstructionCounter == (SystemConfig.CPU_FREQ / 10))
             {
                 ulong TimeNow = System.Clock.GetRealTimeNow();
-                IPS = (InstructionCounter) / ((double)(TimeNow - SavedTime) / SystemConst.ONE_BILLION);
+                IPS = (InstructionCounter * SystemConst.ONE_BILLION) / (double)(TimeNow - SavedTime);
                 SavedTime = TimeNow;
                 InstructionCounter = 0;
             }

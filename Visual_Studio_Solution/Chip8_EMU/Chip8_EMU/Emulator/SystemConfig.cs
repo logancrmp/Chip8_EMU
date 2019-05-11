@@ -18,10 +18,10 @@ namespace Chip8_EMU.Emulator
 
         internal const int FRAME_RATE = 120;
 
-        internal const uint CPU_FREQ = 20000000;
+        internal const uint CPU_FREQ = 9000000;
 
         // 3 - lowest, 0 - highest
-        internal const int PERFORMANCE_LEVEL = 0;
+        internal const int PERFORMANCE_LEVEL = 2;
 
         internal const int DRAW_FRAME_WIDTH = 1280;
         internal const int DRAW_FRAME_HEIGHT = 640;

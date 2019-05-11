@@ -10,6 +10,8 @@ namespace Chip8_EMU
     /// </summary>
     public partial class MainWindow : Window
     {
+        EmuRunner Runner = new EmuRunner();
+
         public MainWindow()
         {
             InitializeComponent();
@@ -24,9 +26,21 @@ namespace Chip8_EMU
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            EmuRunner Runner = new EmuRunner();
-
             Runner.RunEmulator(this);
+        }
+
+
+        private void Button_Click_Pause(object sender, RoutedEventArgs e)
+        {
+            if (Runner.System.Clock.ClockState == ClockStateEnum.ClockPaused)
+            {
+                Runner.System.Clock.ResumeClock();
+            }
+            else
+            if (Runner.System.Clock.ClockState == ClockStateEnum.ClockRunning)
+            {
+                Runner.System.Clock.PauseClock();
+            }
         }
     }
 }

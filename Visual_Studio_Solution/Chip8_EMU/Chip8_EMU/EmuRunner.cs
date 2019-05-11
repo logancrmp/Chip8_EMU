@@ -11,14 +11,17 @@ namespace Chip8_EMU
     class EmuRunner
     {
         private BackgroundWorker EmuWorker = null;
+        internal bool EmuRunning { get; private set; } = false;
 
         internal Chip8 System;
 
         internal void RunEmulator(MainWindow DisplayWindow)
         {
-            if (EmuWorker == null)
+            if (EmuRunning == false)
             {
                 System = new Chip8(DisplayWindow);
+
+                EmuRunning = true;
 
                 EmuWorker = new BackgroundWorker();
                 EmuWorker.DoWork += DoWork;

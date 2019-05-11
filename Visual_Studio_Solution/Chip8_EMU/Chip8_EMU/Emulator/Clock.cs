@@ -29,7 +29,7 @@ namespace Chip8_EMU.Emulator
 
         private ulong ClockTime = 0;
 
-        ClockStateEnum ClockState = ClockStateEnum.ClockNotStarted;
+        internal ClockStateEnum ClockState { get; private set; } = ClockStateEnum.ClockNotStarted;
 
 
         internal int AddTimer(TimerFncPtrType TimerNotification)
@@ -57,7 +57,7 @@ namespace Chip8_EMU.Emulator
         }
 
         
-        void PauseClock()
+        internal void PauseClock()
         {
             if (ClockState == ClockStateEnum.ClockRunning)
             {
@@ -72,7 +72,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        void ResumeClock()
+        internal void ResumeClock()
         {
             if (ClockState == ClockStateEnum.ClockPaused)
             {
@@ -114,7 +114,7 @@ namespace Chip8_EMU.Emulator
                 // Sleep and wait until the clock is resumed
                 while (ClockState == ClockStateEnum.ClockPaused)
                 {
-                    System.Threading.Thread.Sleep(1);
+                    System.Threading.Thread.Sleep(0);
                 }
 
                 // set ClockTime to the number of nanoseconds since time 0
@@ -248,7 +248,7 @@ namespace Chip8_EMU.Emulator
         {
             ulong Deadline = 0;
 
-            ulong TimeNow = ParentClock.GetRealTimeNow();
+            ulong TimeNow = ParentClock.GetTimeNow();
 
             // find the next deadline for the timer that is greater than the current clock time
             var Offset = TimeNow - NextDeadline;

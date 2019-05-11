@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chip8_EMU.Emulator
 {
@@ -34,6 +30,7 @@ namespace Chip8_EMU.Emulator
 
             NewTimer.TimerNotification = TimerNotification;
             NewTimer.TimerActive = false;
+            NewTimer.TimerHandle = TimerHandleCounter;
 
             Timers[TimerHandleCounter] = NewTimer;
 
@@ -78,16 +75,9 @@ namespace Chip8_EMU.Emulator
             if (Timers.ContainsKey(TimerHandle))
             {
                 // find the next deadline for the timer that is greater than the current clock time
-                var ClockMod = ClockTime % Timers[TimerHandle].TimeoutValue;
+                var Offset = ClockTime - Timers[TimerHandle].NextDeadline;
 
-                if (ClockMod == 0)
-                {
-                    Deadline = ClockTime + Timers[TimerHandle].TimeoutValue;
-                }
-                else
-                {
-                    Deadline = ClockTime + (Timers[TimerHandle].TimeoutValue - ClockMod);
-                }
+                Deadline = ClockTime + (Timers[TimerHandle].TimeoutValue - (Offset % Timers[TimerHandle].TimeoutValue));
             }
 
             return Deadline;
@@ -111,6 +101,35 @@ namespace Chip8_EMU.Emulator
             }
         }
 
+        /*
+            Need to add a pause that pauses all timers in the system.
+            The timers should be able to be unpaused, and upon resuming,
+            should pick up where they left off. If a timer was 75% of the
+            way to its timeout, when resumed it should be loaded with 25%
+            of its timeout value
+
+            
+            void pause()
+            {
+                // save real time
+
+                // loop over timers
+
+                    // save previous active state
+                    // set to inactive
+                    // save offset from saved real time
+            }
+
+            void resume()
+            {
+                // set clock time to real time
+
+                // loop over timers
+
+                    // restore previous active state
+                    // set timeout value = clock time - saved offset
+            }
+        */
 
         internal void RunClock()
         {
@@ -123,7 +142,7 @@ namespace Chip8_EMU.Emulator
                 timer.NextDeadline = GetRealTimeNow() + timer.TimeoutValue;
                 timer.DeadlineHandled = false;
             }
-            
+
             while (true)
             {
                 // set ClockTime to the number of nanoseconds since time 0
@@ -152,17 +171,7 @@ namespace Chip8_EMU.Emulator
                         {
                             if (timer.SkipMissedDeadlines)
                             {
-                                // find the next deadline for the timer that is greater than the current clock time
-                                var ClockMod = ClockTime % timer.TimeoutValue; // remove division on every loop?
-
-                                if (ClockMod == 0)
-                                {
-                                    timer.NextDeadline = ClockTime + timer.TimeoutValue;
-                                }
-                                else
-                                {
-                                    timer.NextDeadline = ClockTime + (timer.TimeoutValue - ClockMod);
-                                }
+                                timer.NextDeadline = GetNextRealtimeDeadline(timer.TimerHandle);
                             }
                             else
                             {
@@ -193,7 +202,7 @@ namespace Chip8_EMU.Emulator
 
         internal ulong GetRealTimeNow()
         {
-            return (ulong)(( ClockSource.ElapsedTicks * SystemConst.ONE_BILLION ) / Stopwatch.Frequency);
+            return (ulong)((ClockSource.ElapsedTicks * SystemConst.ONE_BILLION) / Stopwatch.Frequency);
         }
 
 
@@ -207,6 +216,7 @@ namespace Chip8_EMU.Emulator
     class Timer
     {
         internal TimerTypeEnum TimerType;
+        internal int TimerHandle;
 
         internal bool TimerActive;
 

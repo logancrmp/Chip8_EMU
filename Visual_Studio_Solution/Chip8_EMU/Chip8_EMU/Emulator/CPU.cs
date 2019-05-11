@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 enum TrapSourceEnum
 {
@@ -40,6 +36,7 @@ namespace Chip8_EMU.Emulator
         {
             this.System = System;
 
+            Registers = new RegisterMap();
             random = new Random();
             Instructions = new CPU_Instructions(System);
 

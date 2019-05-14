@@ -67,7 +67,7 @@
     <Compile Include="Emulator\Clock.cs" />
     <Compile Include="Emulator\CPU.cs" />
     <Compile Include="Emulator\CPU_Instructions.cs" />
-    <Compile Include="Emulator\Keyboard.cs" />
+    <Compile Include="Emulator\Buttons.cs" />
     <Compile Include="Emulator\MMU.cs" />
     <Compile Include="Emulator\Registers.cs" />
     <Compile Include="Emulator\ROM.cs" />

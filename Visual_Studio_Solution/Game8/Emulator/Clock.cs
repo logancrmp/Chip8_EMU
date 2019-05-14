@@ -68,7 +68,7 @@ namespace Game8.Emulator
                 // To avoid having to use locks, sleep
                 // and give time for the clock thread
                 // to recognize it has been paused
-                System.Threading.Thread.Sleep(5);
+                System.Threading.Thread.Sleep(50);
 
                 // at this point in time, ClockTime holds the most
                 // recent executed nanosecond of the paused system. 

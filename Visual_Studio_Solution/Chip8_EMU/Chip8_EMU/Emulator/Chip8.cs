@@ -23,7 +23,7 @@ namespace Chip8_EMU.Emulator
             Keyboard = new Keyboard(this);
             Screen = new Screen(this, DisplayWindow);
 
-            CPU.SetupClocks();
+            //CPU.SetupClocks();
             Screen.SetupClocks();
 
             MMU.LoadRom("ROM.ch8");

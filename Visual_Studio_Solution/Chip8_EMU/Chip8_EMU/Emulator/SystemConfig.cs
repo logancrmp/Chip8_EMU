@@ -24,8 +24,8 @@ namespace Chip8_EMU.Emulator
 
         internal const int DRAW_FRAME_WIDTH = 1280;
         internal const int DRAW_FRAME_HEIGHT = 640;
-        internal const int EMU_SCREEN_WIDTH = 64;
-        internal const int EMU_SCREEN_HEIGHT = 32;
+        internal const int EMU_SCREEN_WIDTH = 640;
+        internal const int EMU_SCREEN_HEIGHT = 320;
 
         internal const byte STACK_SIZE = 24;
         internal const ushort HARDWARE_PC_INIT_ADDRESS = 0x0200;

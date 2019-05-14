@@ -63,7 +63,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Emulator\Chip8.cs" />
+    <Compile Include="Emulator\Gameboy.cs" />
     <Compile Include="Emulator\Clock.cs" />
     <Compile Include="Emulator\CPU.cs" />
     <Compile Include="Emulator\CPU_Instructions.cs" />

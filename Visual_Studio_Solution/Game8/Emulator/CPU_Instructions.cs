@@ -10,7 +10,7 @@ namespace Game8.Emulator
 {
     class CPU_Instructions
     {
-        private Chip8 System;
+        private Gameboy System;
 
         // need to add to a speaker component!!!
         internal SoundPlayer simpleSound = new SoundPlayer("tone.wav");
@@ -23,7 +23,7 @@ namespace Game8.Emulator
         private int DRAW_SPRITE_AT_COORD_DrawState = 0;
 
 
-        internal CPU_Instructions(Chip8 System)
+        internal CPU_Instructions(Gameboy System)
         {
             this.System = System;
         }
@@ -474,7 +474,7 @@ namespace Game8.Emulator
                 byte VX = System.CPU.Registers.GetVXRegValue(X);
                 byte VY = System.CPU.Registers.GetVXRegValue(Y);
 
-                // mask values per documentation at http://chip8.sourceforge.net/chip8-1.1.pdf
+                // mask values per documentation at http://Game8.sourceforge.net/Game8-1.1.pdf
                 VX &= 0x3F;
                 VY &= 0x1F;
 

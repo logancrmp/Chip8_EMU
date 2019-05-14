@@ -5,13 +5,13 @@ namespace Game8.Emulator
 {
     internal class MMU
     {
-        private Chip8 System;
+        private Gameboy System;
 
         private byte[] Memory = new byte[SystemConfig.MEMORY_SIZE];
         private ushort[] Stack = new ushort[SystemConfig.STACK_SIZE];
 
 
-        internal MMU(Chip8 System)
+        internal MMU(Gameboy System)
         {
             this.System = System;
 

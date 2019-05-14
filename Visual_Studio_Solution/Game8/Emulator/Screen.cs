@@ -24,7 +24,7 @@ namespace Game8.Emulator
     class Screen
     {
         private MainWindow ParentWindow;
-        private Chip8 System;
+        private Gameboy System;
 
         internal readonly static PixelFormat pixelFormat = PixelFormats.Rgb24;
         internal readonly static int Stride = ((SystemConfig.DRAW_FRAME_WIDTH * pixelFormat.BitsPerPixel) + 7) / 8;
@@ -50,7 +50,7 @@ namespace Game8.Emulator
         private const int ImgDivHeight = SystemConfig.DRAW_FRAME_HEIGHT / SystemConfig.EMU_SCREEN_HEIGHT;
 
 
-        internal Screen(Chip8 System, MainWindow ParentWindow)
+        internal Screen(Gameboy System, MainWindow ParentWindow)
         {
             this.ParentWindow = ParentWindow;
             this.System = System;

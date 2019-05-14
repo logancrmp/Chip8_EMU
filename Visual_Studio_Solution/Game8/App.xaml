@@ -1,7 +1,7 @@
-﻿<Application x:Class="Chip8_EMU.App"
+﻿<Application x:Class="Game8_EMU.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:Chip8_EMU"
+             xmlns:local="clr-namespace:Game8_EMU"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
          

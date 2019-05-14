@@ -12,13 +12,13 @@ namespace Game8.Emulator
         [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         private static extern short GetKeyState(int keyCode);
 
-        private Chip8 System;
+        private Gameboy System;
 
         private ulong[] LastCheckTime = new ulong[0x10];
         private bool[] StoredKeyState = new bool[0x10];
 
 
-        internal Keyboard(Chip8 System)
+        internal Keyboard(Gameboy System)
         {
             this.System = System;
 

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Game8.Emulator
 {
-    class Chip8
+    class Gameboy
     {
         internal Clock Clock;
         internal CPU CPU;
@@ -14,7 +14,7 @@ namespace Game8.Emulator
         internal Screen Screen;
         internal Keyboard Keyboard;
 
-        internal Chip8(MainWindow DisplayWindow)
+        internal Gameboy(MainWindow DisplayWindow)
         {
             Clock = new Clock();
 

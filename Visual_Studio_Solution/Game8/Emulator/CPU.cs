@@ -14,7 +14,7 @@ namespace Game8.Emulator
 {
     internal class CPU
     {
-        private Chip8 System;
+        private Gameboy System;
 
         internal RegisterMap Registers;
 
@@ -32,7 +32,7 @@ namespace Game8.Emulator
         private ulong LastTime = 0;
         
 
-        internal CPU(Chip8 System)
+        internal CPU(Gameboy System)
         {
             this.System = System;
 

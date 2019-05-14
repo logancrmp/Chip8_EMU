@@ -1,10 +1,5 @@
 ﻿using Game8.Emulator;
-using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Game8
 {
@@ -13,13 +8,14 @@ namespace Game8
         private BackgroundWorker EmuWorker = null;
         internal bool EmuRunning { get; private set; } = false;
 
-        internal Chip8 System;
+        internal Gameboy System { get; private set; }
+
 
         internal void RunEmulator(MainWindow DisplayWindow)
         {
             if (EmuRunning == false)
             {
-                System = new Chip8(DisplayWindow);
+                System = new Gameboy(DisplayWindow);
 
                 EmuRunning = true;
 
@@ -28,6 +24,7 @@ namespace Game8
                 EmuWorker.RunWorkerAsync();
             }
         }
+
 
         private void DoWork(object sender, DoWorkEventArgs e)
         {

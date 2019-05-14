@@ -447,7 +447,7 @@ namespace Chip8_EMU.Emulator
             if (DRAW_SPRITE_AT_COORD_DrawState == 0)
             {
                 // block until 60Hz refresh
-                DRAW_SPRITE_AT_COORD_RefreshDeadline = System.Clock.GetTimer(System.CPU.SyncTimerHandler).GetNextRealtimeDeadline();
+                DRAW_SPRITE_AT_COORD_RefreshDeadline = System.Clock.GetTimer(System.CPU.SyncTimerHandler).GetNextDeadline();
                 DRAW_SPRITE_AT_COORD_DrawState = 1;
                 System.CPU.Registers.J_JumpFlag = 1;
             }

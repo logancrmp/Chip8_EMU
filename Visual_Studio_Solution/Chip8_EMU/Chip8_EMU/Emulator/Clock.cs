@@ -24,6 +24,7 @@ namespace Chip8_EMU.Emulator
     {
         private Dictionary<int, Timer> Timers = new Dictionary<int, Timer>();
         private int TimerHandleCounter = 0;
+        private const int MaxTimerExec = (SystemConfig.PERFORMANCE_LEVEL >= 2) ? 100 : 1000;
 
         private Stopwatch ClockSource = new Stopwatch();
 
@@ -63,8 +64,31 @@ namespace Chip8_EMU.Emulator
             {
                 ClockState = ClockStateEnum.ClockPaused;
 
+                // This is called from the GUI thread.
+                // To avoid having to use locks, sleep
+                // and give time for the clock thread
+                // to recognize it has been paused
+                System.Threading.Thread.Sleep(5);
+
+                // at this point in time, ClockTime holds the most
+                // recent executed nanosecond of the paused system. 
+
                 foreach (var timer in Timers.Values)
                 {
+                    if (timer.TimerActive)
+                    {
+                        ulong NumberOfMissedDeadlines = (ClockTime - timer.NextDeadline) / timer.TimeoutValue;
+                        ulong CompletedTimerTicks = (ClockTime - timer.NextDeadline) % timer.TimeoutValue;
+
+                        if (timer.SkipMissedDeadlines)
+                        {
+                            NumberOfMissedDeadlines = 0;
+                        }
+
+                        timer.TimerActiveTicksBehindRealTime = (NumberOfMissedDeadlines * timer.TimeoutValue);
+                        timer.TimerActiveNextDeadlineOffset = (timer.TimeoutValue - CompletedTimerTicks);
+                    }
+
                     timer.TimerActiveResumeState = timer.TimerActive;
                     timer.TimerActive = false;
                 }
@@ -84,10 +108,13 @@ namespace Chip8_EMU.Emulator
                 {
                     if (timer.TimerActiveResumeState == true)
                     {
-                        // this doesn't take into account the portion of the timer that expired
-                        // before the system was paused. Need to add this to the calculation to
-                        // get it to be exact!!!
-                        timer.NextDeadline = timer.GetNextRealtimeDeadline();
+                        // resume the timer using the starting ClockTime, plus the portion
+                        // of the timer that was not executed when the clock was paused,
+                        // minus the timers real time offset from when it was paused
+                        timer.NextDeadline = ClockTime;
+                        timer.NextDeadline += timer.TimerActiveNextDeadlineOffset;
+                        timer.NextDeadline -= timer.TimerActiveTicksBehindRealTime;
+
                         timer.DeadlineHandled = false;
                         timer.TimerActiveResumeState = false;
                         timer.TimerActive = true;
@@ -133,8 +160,8 @@ namespace Chip8_EMU.Emulator
                     TimerExecCntr = 0;
 
                     // timer will execute as many deadlines as possible until either the timer
-                    // has caught up with real time, or at most 10ms of cpu time has been emulated
-                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ / 100))
+                    // has caught up with real time, or at most X ms of cpu time has been emulated
+                    while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ / MaxTimerExec))
                     {
                         TimerExecCntr++;
                         timer.DeadlineHandled = true;
@@ -152,7 +179,7 @@ namespace Chip8_EMU.Emulator
                                 }
                                 else
                                 {
-                                    timer.NextDeadline = timer.GetNextRealtimeDeadline();
+                                    timer.NextDeadline = timer.GetNextDeadline();
                                 }
                             }
                             else
@@ -182,6 +209,11 @@ namespace Chip8_EMU.Emulator
         }
 
 
+        /// <summary>
+        /// Gets the number of elapsed nanseconds, as accurately as possible
+        /// given the frequency of the underlying source clock.
+        /// </summary>
+        /// <returns>System real time in nanoseconds</returns>
         internal ulong GetRealTimeNow()
         {
             return (ulong)((ClockSource.ElapsedTicks * SystemConst.ONE_BILLION) / Stopwatch.Frequency);
@@ -204,6 +236,8 @@ namespace Chip8_EMU.Emulator
 
         internal bool TimerActive;
         internal bool TimerActiveResumeState;
+        internal ulong TimerActiveTicksBehindRealTime;
+        internal ulong TimerActiveNextDeadlineOffset;
 
         // next deadline in absolute nanoseconds from time 0
         internal ulong NextDeadline;
@@ -223,28 +257,55 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal void SetTimerOneShot(ulong TimeoutNanoSeconds)
+        internal bool SetTimerOneShot(ulong TimeoutNanoSeconds)
         {
-            TimerType = TimerTypeEnum.TimerOneShot;
-            SkipMissedDeadlines = false;
-            TimeoutValue = TimeoutNanoSeconds;
+            bool Success = false;
+
+            if (TimeoutNanoSeconds > 0)
+            {
+                Success = true;
+
+                TimerType = TimerTypeEnum.TimerOneShot;
+                SkipMissedDeadlines = false;
+                TimeoutValue = TimeoutNanoSeconds;
+            }
+
+            return Success;
         }
 
 
-        internal void SetTimerCyclic(ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
+        internal bool SetTimerCyclic(ulong TimeoutNanoSeconds, bool SkipMissedDeadlines)
         {
-            TimerType = TimerTypeEnum.TimerCyclic;
-            this.SkipMissedDeadlines = SkipMissedDeadlines;
-            TimeoutValue = TimeoutNanoSeconds;
+            bool Success = false;
+
+            if (TimeoutNanoSeconds > 0)
+            {
+                Success = true;
+
+                TimerType = TimerTypeEnum.TimerCyclic;
+                this.SkipMissedDeadlines = SkipMissedDeadlines;
+                TimeoutValue = TimeoutNanoSeconds;
+            }
+
+            return Success;
         }
 
 
-        internal void StartTimer()
+        internal bool StartTimer()
         {
-            NextDeadline = ParentClock.GetRealTimeNow() + TimeoutValue;
-            DeadlineHandled = false;
+            bool Success = false;
 
-            TimerActive = true;
+            if (TimeoutValue > 0)
+            {
+                Success = true;
+
+                NextDeadline = ParentClock.GetRealTimeNow() + TimeoutValue;
+                DeadlineHandled = false;
+
+                TimerActive = true;
+            }
+
+            return Success;
         }
 
 
@@ -254,7 +315,7 @@ namespace Chip8_EMU.Emulator
         }
 
 
-        internal ulong GetNextRealtimeDeadline()
+        internal ulong GetNextDeadline()
         {
             ulong Deadline = 0;
 

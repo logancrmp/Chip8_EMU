@@ -150,23 +150,26 @@ namespace Chip8_EMU.Emulator
 
         internal void SyncDrawFrameToScreen()
         {
-            framecounter += 1;
+            bool StatsUpdated = false;
 
-            if (framecounter % 60 == 0)
+            if (framecounter++ == SystemConfig.FRAME_RATE)
             {
                 TimeNow = System.Clock.GetRealTimeNow();
-                fps = (60 * (long)SystemConst.ONE_BILLION) / ((TimeNow - LastTime) + 1);
+                fps = (framecounter * SystemConst.ONE_BILLION) / ((TimeNow - LastTime) + 1);
                 LastTime = TimeNow;
+
+                framecounter = 0;
+                StatsUpdated = true;
             }
 
             try
             {
-                // copy the framebuffer to the output, and draw it to the screen
+                // copy the framebuffer to the output, and draw it to the screen (hopefully soonish maybe)
                 ParentWindow.customRender.Dispatcher.Invoke(() =>
                 {
                     VideoFrame.bitmap.WritePixels(rect, FrameBuffer, Stride, 0);
 
-                    if (framecounter % 60 == 0)
+                    if (StatsUpdated)
                     {
                         double CpuHz = System.CPU.IPS;
                         var CpuStr = "";
@@ -186,11 +189,15 @@ namespace Chip8_EMU.Emulator
                             CpuHz = Math.Floor(CpuHz);
                         }
 
-                        ParentWindow.SetLogText("FPS : " + fps.ToString("N2") + "\nFREQ: " + CpuHz.ToString("N2") + " " + CpuStr);
+                        // FWPS: Frame writes per second (not necessarily drawn).
+                        // FREQ: Instructions executed per real time second.
+                        ParentWindow.SetLogText("FWPS : " + fps.ToString("N2") + "\nFREQ: " + CpuHz.ToString("N2") + " " + CpuStr);
                     }
                 }, DispatcherPriority.Render);
             }
             catch { }
+
+            StatsUpdated = false;
         }
     }
 }

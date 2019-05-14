@@ -22,15 +22,15 @@ namespace Chip8_EMU.Emulator
 
         private Random random;
 
-        internal int DelayTimerHandle = 0xFF;
-        internal int SoundTimerHandle = 0xFF;
-        internal int CoreTimerHandle = 0xFF;
-        internal int SyncTimerHandler = 0xFF;
+        internal int DelayTimerHandle { get; private set; } = 0xFF;
+        internal int SoundTimerHandle { get; private set; } = 0xFF;
+        internal int CoreTimerHandle { get; private set; } = 0xFF;
+        internal int SyncTimerHandler { get; private set; } = 0xFF;
 
+        internal double IPS { get; private set; } = 0;
         private ulong InstructionCounter = 0;
-        private ulong SavedTime = 0;
-        internal double IPS = 0;
-
+        private ulong LastTime = 0;
+        
 
         internal CPU(Chip8 System)
         {
@@ -62,12 +62,12 @@ namespace Chip8_EMU.Emulator
 
             // Setup timer for core clock, and set it to active when the clock starts
             CoreTimerHandle = System.Clock.AddTimer(ExecCycle);
-            System.Clock.GetTimer(CoreTimerHandle).SetTimerCyclic((SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ), false);
+            System.Clock.GetTimer(CoreTimerHandle).SetTimerCyclic(SystemConst.ONE_BILLION / SystemConfig.CPU_FREQ, false);
             System.Clock.GetTimer(CoreTimerHandle).StartTimer();
 
             // Setup timer for 60 Hz instruction sync
             SyncTimerHandler = System.Clock.AddTimer(null);
-            System.Clock.GetTimer(SyncTimerHandler).SetTimerCyclic((SystemConst.ONE_BILLION / 60), true);
+            System.Clock.GetTimer(SyncTimerHandler).SetTimerCyclic(SystemConst.ONE_BILLION / 60, true);
             System.Clock.GetTimer(SyncTimerHandler).StartTimer();
         }
 
@@ -77,11 +77,11 @@ namespace Chip8_EMU.Emulator
             InstructionCounter += 1;
 
             // need a better way to not totally bork this calculation after resuming the clock
-            if (InstructionCounter == (SystemConfig.CPU_FREQ / 10))
+            if (InstructionCounter == SystemConfig.CPU_FREQ)
             {
                 ulong TimeNow = System.Clock.GetRealTimeNow();
-                IPS = (InstructionCounter * SystemConst.ONE_BILLION) / (double)(TimeNow - SavedTime);
-                SavedTime = TimeNow;
+                IPS = (InstructionCounter * SystemConst.ONE_BILLION) / (double)((TimeNow - LastTime) + 1);
+                LastTime = TimeNow;
                 InstructionCounter = 0;
             }
 

@@ -9,9 +9,9 @@
     <Grid>
         <TextBox Name="outlog" HorizontalAlignment="Left" Height="69" Margin="10,690,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="616"/>
         <Button Content="Button" HorizontalAlignment="Left" Margin="1231,690,0,0" VerticalAlignment="Top" Width="151" Click="Button_Click" Height="69"/>
+        <Button Content="Pause/Resume" Width="123" Click="Button_Click_Pause" Margin="631,690,638,10"/>
         <Canvas>
             <local:VideoFrame Canvas.Top="10" Canvas.Left="10" x:Name="customRender" Height="651" Width="1372"/>
-            <Button Content="Pause/Resume" Canvas.Left="907" Canvas.Top="721" Width="123" Height="38" Click="Button_Click_Pause"/>
         </Canvas>
     </Grid>
 </Window>

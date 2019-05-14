@@ -541,7 +541,7 @@ namespace Game8.Emulator
             byte Key = (byte) (System.CPU.Registers.GetVXRegValue(X) & 0x0F);
 
             // check if key was reported as pressed
-            if (System.Keyboard.IsKeyPressed(Key) == true)
+            if (System.Buttons.IsKeyPressed(Key) == true)
             {
                 // move program counter one instructions forward
                 // cpu will auto increment the program counter another instruction
@@ -566,7 +566,7 @@ namespace Game8.Emulator
             byte Key = (byte)(System.CPU.Registers.GetVXRegValue(X) & 0x0F);
 
             // check if key was reported as not pressed
-            if (System.Keyboard.IsKeyPressed(Key) == false)
+            if (System.Buttons.IsKeyPressed(Key) == false)
             {
                 // move program counter one instructions forward
                 // cpu will auto increment the program counter another instruction
@@ -609,7 +609,7 @@ namespace Game8.Emulator
                     for (byte Key = 0; Key < 0x10; Key += 1)
                     {
                         // check if key was reported as pressed
-                        if (System.Keyboard.IsKeyPressed(Key) == true)
+                        if (System.Buttons.IsKeyPressed(Key) == true)
                         {
                             // need to add a speaker and interface for arbitrating start and stop across users
                             simpleSound.PlayLooping();
@@ -634,7 +634,7 @@ namespace Game8.Emulator
                     GET_PRESSED_KEY_CallCntr = 0;
 
                     // check if key was reported as not pressed
-                    if (System.Keyboard.IsKeyPressed(GET_PRESSED_KEY_PressedKey) == false)
+                    if (System.Buttons.IsKeyPressed(GET_PRESSED_KEY_PressedKey) == false)
                     {
                         // need to add a speaker and interface for arbitrating start and stop across users
                         simpleSound.Stop();

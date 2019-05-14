@@ -12,7 +12,7 @@ namespace Game8.Emulator
         internal CPU CPU;
         internal MMU MMU;
         internal Screen Screen;
-        internal Keyboard Keyboard;
+        internal Buttons Buttons;
 
         internal Gameboy(MainWindow DisplayWindow)
         {
@@ -20,7 +20,7 @@ namespace Game8.Emulator
 
             CPU = new CPU(this);
             MMU = new MMU(this);
-            Keyboard = new Keyboard(this);
+            Buttons = new Buttons(this);
             Screen = new Screen(this, DisplayWindow);
 
             CPU.SetupClocks();

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Game8.Emulator
 {
-    internal class Keyboard
+    internal class Buttons
     {
         [DllImport("user32.dll", CharSet = CharSet.Auto, ExactSpelling = true)]
         private static extern short GetKeyState(int keyCode);
@@ -18,7 +18,7 @@ namespace Game8.Emulator
         private bool[] StoredKeyState = new bool[0x10];
 
 
-        internal Keyboard(Gameboy System)
+        internal Buttons(Gameboy System)
         {
             this.System = System;
 
@@ -32,7 +32,7 @@ namespace Game8.Emulator
 
         internal bool IsKeyPressed(int Key)
         {
-            ulong TimeNow = System.Clock.GetTimeNow();
+            ulong TimeNow = System.Clock.GetRealTimeNow();
 
             // If at least 10ms has passed since the last time the key state was updated, we can update the key state
             // Calling GetKeyState too rapidly causes the emulation thread to slow to a grind

@@ -187,7 +187,9 @@ namespace Game8.Emulator
                         }
                         else
                         {
-                            // only continue looping if the current timer is not a repeating timer
+                            // disable the oneshot timer now that it has been executed
+                            // break out of the loop
+                            timer.TimerActive = false;
                             break;
                         }
                     }

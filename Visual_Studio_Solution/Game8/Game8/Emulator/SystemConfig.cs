@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace Chip8_EMU.Emulator
+namespace Game8.Emulator
 {
     static class SystemConst
     {

@@ -10,7 +10,7 @@ enum TrapSourceEnum
 };
 
 
-namespace Chip8_EMU.Emulator
+namespace Game8.Emulator
 {
     internal class CPU
     {

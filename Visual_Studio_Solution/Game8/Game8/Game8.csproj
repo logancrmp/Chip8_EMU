@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{B08F76DD-69A5-45DF-B6C3-09A3B2DF6E3C}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Chip8_EMU</RootNamespace>
-    <AssemblyName>Chip8_EMU</AssemblyName>
+    <RootNamespace>Game8</RootNamespace>
+    <AssemblyName>Game8</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>

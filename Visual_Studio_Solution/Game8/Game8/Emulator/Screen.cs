@@ -7,7 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
-namespace Chip8_EMU.Emulator
+namespace Game8.Emulator
 {
     internal class VideoFrame : FrameworkElement
     {

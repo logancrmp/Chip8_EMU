@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace Chip8_EMU.Emulator
+namespace Game8.Emulator
 {
     internal class MMU
     {

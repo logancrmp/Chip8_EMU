@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Chip8_EMU.Emulator
+namespace Game8.Emulator
 {
     class CPU_Instructions
     {

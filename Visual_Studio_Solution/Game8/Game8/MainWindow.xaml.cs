@@ -1,9 +1,9 @@
-﻿using Chip8_EMU.Emulator;
+﻿using Game8.Emulator;
 using System;
 using System.ComponentModel;
 using System.Windows;
 
-namespace Chip8_EMU
+namespace Game8
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

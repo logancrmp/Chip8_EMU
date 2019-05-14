@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace Chip8_EMU.Emulator
+namespace Game8.Emulator
 {
     enum TimerTypeEnum
     {

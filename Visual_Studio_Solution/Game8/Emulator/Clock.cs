@@ -115,7 +115,6 @@ namespace Game8.Emulator
                         timer.NextDeadline += timer.TimerActiveNextDeadlineOffset;
                         timer.NextDeadline -= timer.TimerActiveTicksBehindRealTime;
 
-                        timer.DeadlineHandled = false;
                         timer.TimerActiveResumeState = false;
                         timer.TimerActive = true;
                     }
@@ -136,7 +135,6 @@ namespace Game8.Emulator
             foreach (var timer in Timers.Values)
             {
                 timer.NextDeadline = StartTime + timer.TimeoutValue;
-                timer.DeadlineHandled = false;
             }
 
             while (true)
@@ -164,7 +162,6 @@ namespace Game8.Emulator
                     while (ClockTime >= timer.NextDeadline && TimerExecCntr < (SystemConfig.CPU_FREQ / MaxTimerExec))
                     {
                         TimerExecCntr++;
-                        timer.DeadlineHandled = true;
 
                         timer.TimerNotification?.Invoke();
 
@@ -187,9 +184,6 @@ namespace Game8.Emulator
                                 // increment from previous deadline
                                 timer.NextDeadline += timer.TimeoutValue;
                             }
-
-                            // clear deadline handled flag
-                            timer.DeadlineHandled = false;
                         }
                         else
                         {
@@ -241,7 +235,6 @@ namespace Game8.Emulator
 
         // next deadline in absolute nanoseconds from time 0
         internal ulong NextDeadline;
-        internal bool DeadlineHandled;
 
         // deadline time in nanoseconds from when the timer is started
         internal ulong TimeoutValue;
@@ -300,7 +293,6 @@ namespace Game8.Emulator
                 Success = true;
 
                 NextDeadline = ParentClock.GetRealTimeNow() + TimeoutValue;
-                DeadlineHandled = false;
 
                 TimerActive = true;
             }
